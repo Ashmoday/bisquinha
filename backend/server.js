@@ -18,34 +18,19 @@ function createCards() {
         for (const cardValue of cardValues) {
             const card = { cardValue, cardSuit, id: id++ };
             cards.push(card);
+         }
         }
-    }
-        console.log(cards);
         return cards;
-
 }
 
-const valores = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-const naipes = ['Copas', 'Ouros', 'Paus', 'Espadas'];
+function shuffle(cards) {
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    console.log(cards);
+}
 
-// Função para criar um baralho completo com cartas únicas
-// function criarBaralho() {
-//     let id = 0;
-//   const baralho = [];
-//   for (const naipe of naipes) {
-//     for (const valor of valores) {
-//       const carta = { valor, naipe, id: id++  };
-//       baralho.push(carta);
-//     }
-//   }
-//   console.log(baralho);
-//   return baralho;
-// }
-
-
-// function generateId() {
-//     return '-' + Math.random().toString(36).substr(2, 9);
-// }
 
 const io = new Server(httpServer, {
     cors: {
@@ -56,7 +41,11 @@ const io = new Server(httpServer, {
 async function main() {
     io.on('connect', (socket) => {
         console.log('user connected', socket.id);
-        createCards();
+
+        socket.on("start", () => {
+            const cards = createCards();
+            shuffle(cards);
+        });
     })
 
     httpServer.listen(PORT, () => {
