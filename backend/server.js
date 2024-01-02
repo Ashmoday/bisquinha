@@ -8,16 +8,48 @@ const httpServer = createServer(app);
 
 
 
-const  cardValues= ['2', '3', '4', '5', '6', '7', 'J', 'Q', 'K', 'A'];
+const cardValues= ['2', '3', '4', '5', '6', '7', 'J', 'Q', 'K', 'A'];
 const cardSuits = ['Copas', 'Ouros', 'Paus', 'Espadas'];
 
 
 let players = [];
 let playerNames = {}
 
+let playersWhoPlayedThisHand = [];
 
-function compareCards(cards) {
+
+
+function compareCards(cards, trump) {
+    if (cards.length < 1) return;
+    const firstSuit = cards[0].cardSuit;    
+    const hasTrump = cards.some(card => card.cardSuit === trump.cardSuit);
+
     cards.sort((card1, card2) => {
+        // Se um trunfo foi jogado, considere apenas as cartas do mesmo naipe que o trunfo
+        if (hasTrump) {
+            if (card1.cardSuit === trump.cardSuit && card2.cardSuit === trump.cardSuit) {
+                const valueIndex1 = cardValues.indexOf(card1.cardValue);
+                const valueIndex2 = cardValues.indexOf(card2.cardValue);
+                return valueIndex1 - valueIndex2;
+            } else if (card1.cardSuit === trump.cardSuit) {
+                return -1; // A primeira carta é do mesmo naipe do trunfo, então é maior
+            } else if (card2.cardSuit === trump.cardSuit) {
+                return 1; // A segunda carta é do mesmo naipe do trunfo, então é maior
+            }
+        }
+
+        // Se nenhum trunfo foi jogado, considere apenas as cartas do mesmo naipe que a primeira carta
+        if (card1.cardSuit === firstSuit && card2.cardSuit === firstSuit) {
+            const valueIndex1 = cardValues.indexOf(card1.cardValue);
+            const valueIndex2 = cardValues.indexOf(card2.cardValue);
+            return valueIndex1 - valueIndex2;
+        } else if (card1.cardSuit === firstSuit) {
+            return -1; // A primeira carta é do mesmo naipe da primeira carta, então é maior
+        } else if (card2.cardSuit === firstSuit) {
+            return 1; // A segunda carta é do mesmo naipe da primeira carta, então é maior
+        }
+
+        // Se nenhum dos casos acima se aplicar, compare pelos valores normais
         const valueIndex1 = cardValues.indexOf(card1.cardValue);
         const valueIndex2 = cardValues.indexOf(card2.cardValue);
         return valueIndex1 - valueIndex2;
@@ -26,8 +58,11 @@ function compareCards(cards) {
     return cards[cards.length - 1];
 }
 
-function nextHand(playingHand) {
-    const bigCard = compareCards(playingHand.map(entry => entry.card));
+function nextHand(playingHand, trump) {
+    if (playingHand.length < 1) return;
+    const bigCard = compareCards(playingHand.map(entry => entry.card), trump);
+    const bigCardOwner = playingHand.find(entry => entry.card === bigCard).cardOwner;
+
     console.log('A maior carta na mão jogada é:', bigCard);
 
     // Adicione a lógica adicional aqui, se necessário
@@ -36,8 +71,11 @@ function nextHand(playingHand) {
     // io.emit('handResult', { bigCard, playingHand });
 
     // Limpar a mão jogada para a próxima rodada
+    playersWhoPlayedThisHand = [];
     playingHand = [];
+    
 }
+
 
 
 
@@ -60,6 +98,15 @@ function shuffle(cards) {
         [cards[i], cards[j]] = [cards[j], cards[i]];
     }
 
+}
+
+function cardTrump(cards) {
+    let trump = cards[cards.length -1]
+    while (trump.cardValue == "A" || trump.cardValue == "7" ) {
+        shuffle(cards)
+        trump = cards[cards.length -1]
+    }
+    return trump;
 }
 
 function distributeCards(cards, numberOfPlayers, cardsPerPlayer) {
@@ -86,75 +133,97 @@ const io = new Server(httpServer, {
 
 
 function tick(delta) {
-    io.emit('players', players);    
+    io.emit('players', players); 
+    io.emit('gameData', {hands: players, playerNames});
 }
 
 async function main() {
+    let cards;
+    let trump;
+
     io.on('connect', (socket) => {
         console.log('user connected', socket.id);
 
-
-        socket.on("start", (playerName) => {
+        socket.on("enterGame", (playerName) => {
             players.push({
                 id: socket.id,
                 name: playerName,
                 cards: []
             });
+            io.emit('players', players);
+            io.emit('gameData', {hands: players, playerNames});
+
+        })
+
+        socket.on("start", () => {
+            // players.push({
+            //     id: socket.id,
+            //     name: playerName,
+            //     cards: []
+            // });
 
 
             io.emit('players', players);    
 
-            const cards = createCards();
+            cards = createCards();
             shuffle(cards);
             const hands = distributeCards(cards, players.length, 3);
 
             for (let i = 0; i < players.length; i++) {
                 players[i].cards = hands[i];
             }
+            trump = cardTrump(cards);
+            console.log("o trunfo é", trump)
 
-            socket.on("nextHand", (playingHand) => {
-                nextHand(playingHand);
-                
-            })
-
-            socket.on("playCard", (card) => {
-                const player = players.find(player => player.id === socket.id);
-                if (player) {
-                    const index = player.cards.findIndex(c => c.id === card.id);
-    
-                    if (index !== -1) {
-                        player.cards.splice(index, 1);
-    
-                        io.emit('gameData', { hands: players, playerNames });
-                    } else {
-                        console.log("Carta não encontrada na mão do jogador");
-                    }
-                } else {
-                    console.log("Jogador não encontrado");
-                }
-            });
-
-            socket.on("buyCard", () => {
-                const player = players.find(player => player.id === socket.id);
-                if (player) {
-                    if (cards.length > 0 && player.cards.length < 3) {
-                        console.log("todas cartas", cards)
-                        const newCard = cards.shift();
-                        player.cards.push(newCard);
-                        
-                        io.emit('gameData', { hands: players, playerNames});
-                        console.log("novas cartas", cards)
-                    } else {
-                        console.log("Não é possível comprar cartas.")
-                    }
-                } else {
-                    console.log("Player not found")
-                }
-            })
-
-            io.emit('gameData', {hands: players, playerNames});
-            console.log(players)
         });
+
+        socket.on("playCard", (card) => {
+            const player = players.find(player => player.id === socket.id);
+            
+            if (playersWhoPlayedThisHand.includes(socket.id)) {
+                console.log('Você já jogou uma carta nesta mão.');
+                return;
+            }
+
+            if (player) {
+                const index = player.cards.findIndex(c => c.id === card.id);
+                if (index !== -1) {
+                    player.cards.splice(index, 1);
+                    io.emit('gameData', { hands: players, playerNames });
+                    io.emit('cardPlayed', { card, cardOwner: player.name });
+                    playersWhoPlayedThisHand.push(socket.id);
+
+                } else {
+                    console.log("Carta não encontrada na mão do jogador");
+                }
+            } else {
+                console.log("Jogador não encontrado");
+            }
+        });
+
+        socket.on("buyCard", () => {
+            const player = players.find(player => player.id === socket.id);
+            if (player) {
+                if (cards.length > 0 && player.cards.length < 3) {
+                    const newCard = cards.shift();
+                    player.cards.push(newCard);
+                    
+                    io.emit('gameData', { hands: players, playerNames});
+                } else {
+                    console.log("Não é possível comprar cartas.")
+                }
+            } else {
+                console.log("Player not found")
+            }
+        })
+
+        socket.on("nextHand", (playingHand) => {
+            nextHand(playingHand, trump);
+            io.emit('clearTable');
+            
+        })
+
+        io.emit('gameData', {hands: players, playerNames});
 
 
         socket.on('disconnect', () => {
