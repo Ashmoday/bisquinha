@@ -63,6 +63,10 @@
     socket.emit('nextHand', (playingHand));
   }
 
+  function selectTeam(team) {
+    socket.emit("selectTeam", team);
+  }
+
 </script>
 
 <template>
@@ -76,7 +80,7 @@
 
 
        <div v-for="(hand, index) in playerHands" :key="hand.id">
-      <p>{{ hand.name }}'s Mão:</p>
+      <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
       <ul>
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
           {{ card.cardValue }} de {{ card.cardSuit }}
@@ -95,6 +99,11 @@
     <button type="submit" @click="buyCard">Buy Card</button>
 
     <button type="submit" @click="nextHand(playingHand)">Next Hand</button>
+
+    <button type="submit" @click="selectTeam(1)">Time 1</button>
+    <button type="submit" @click="selectTeam(2)">Time 2</button>
+
+    
 
   </div>
 </template>

@@ -137,6 +137,20 @@ function tick(delta) {
     io.emit('gameData', {hands: players, playerNames});
 }
 
+function checkTeam(players) {
+    let error = [];
+    
+    if (players.some(player => player.team === 0)) {
+        return error = "Existem jogadores sem time";
+    };
+    let team1 = players.filter(player => player.team == 1 );
+    let team2 = players.filter(player => player.team == 2 );
+
+    if (team1.length > 2 || team2.length > 2) {
+        return error = "Times não balanceados";
+    }
+
+}
 async function main() {
     let cards;
     let trump;
@@ -145,14 +159,23 @@ async function main() {
         console.log('user connected', socket.id);
 
         socket.on("enterGame", (playerName) => {
+            if (players.length >= 4) return console.log("Lotado");
             players.push({
                 id: socket.id,
                 name: playerName,
-                cards: []
+                cards: [],
+                team: 0
             });
             io.emit('players', players);
             io.emit('gameData', {hands: players, playerNames});
 
+        })
+
+        socket.on("selectTeam", (team) =>  {
+            const player = players.find(player => player.id === socket.id);
+            player.team = team;
+            io.emit('players', players);
+            io.emit('gameData', {hands: players, playerNames});
         })
 
         socket.on("start", () => {
@@ -161,7 +184,8 @@ async function main() {
             //     name: playerName,
             //     cards: []
             // });
-
+            let error = checkTeam(players);
+            if (error) return console.log(error);
 
             io.emit('players', players);    
 
