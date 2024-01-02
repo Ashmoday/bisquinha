@@ -5,37 +5,50 @@
   const socket = io("ws://localhost:3002");
   let players = [];
   const playerName = ref('');
-  const playerNames = ref({});
   const playerHands = ref([]);
   let playingHand = [];
+  const playedCards = ref([]); // Adicione isso para manter o controle das cartas jogadas
+
 
   onMounted( () => {
     socket.on('connect', () => {
     });
        
-     
 
   })
+  socket.on('clearTable', () => {
+    playedCards.value = [];
+    playingHand = [];
+  })
+  
+  socket.on('cardPlayed', ({ card, cardOwner }) => {
+    // Adicione a carta jogada à lista
+    playedCards.value.push({ card, cardOwner });
+});
   socket.on('players', (serverPlayers) => {
         players = serverPlayers;
-      })
-
-  function startGame(){
-      socket.emit("start", playerName.value);
-      
+  })
       socket.on('gameData', ({ hands, playerNames }) => {
-        playerHands.value = hands;
-        playerNames.value = playerNames;
-        console.log(playerHands.value[0].cards);
+      playerHands.value = hands;
+      playerNames.value = playerNames;
+    });
 
-        
+  function enterGame(){
+      socket.emit("enterGame", playerName.value);
+      
+  }
+
+  function startGame() {
+        socket.emit("start")
+        socket.on('gameData', ({ hands, playerNames }) => {
+        playerHands.value = hands;
+        playerNames.value = playerNames;       
     })
   }
   function playCard(card, cardOwner) {
+    
     if (cardOwner === playerName.value) {
-      console.log(`Carta jogada por ${playerName.value}: ${card.cardValue} de ${card.cardSuit}`);
       playingHand.push({card, cardOwner});
-      console.log("mao jogada", playingHand);
       socket.emit("playCard", (card))
     } else {
       console.log(`Você não pode jogar a carta da mão de ${cardOwner}.`);
@@ -48,7 +61,6 @@
 
   function nextHand(playingHand) {
     socket.emit('nextHand', (playingHand));
-    console.log('rodou1');
   }
 
 </script>
@@ -57,7 +69,11 @@
   <div>
       <h1>hello</h1>
       <input v-model="playerName" placeholder="Seu nome" />
-      <button type="submit" @click="startGame">Start</button>
+      <button type="submit" @click="enterGame">Entrar</button>
+
+      <button type="submit" @click="startGame">Iniciar Partida</button>
+
+
 
        <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão:</p>
@@ -67,6 +83,14 @@
         </li>
       </ul>
     </div>
+    <div v-if="playedCards.length > 0">
+    <h2>Cartas Jogadas:</h2>
+    <ul>
+        <li v-for="(play, index) in playedCards" :key="index">
+            {{ play.card }} (Jogador: {{ play.cardOwner }})
+        </li>
+    </ul>
+</div>
 
     <button type="submit" @click="buyCard">Buy Card</button>
 
