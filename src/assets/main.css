@@ -1,4 +1,3 @@
-@import './base.css';
 
 body {
   margin: 0;
@@ -16,8 +15,8 @@ body {
 }
 
 #app {
-  display: flex; /* Alteração para flexbox */
-  flex-direction: column; /* Coluna para empilhar elementos verticalmente */
+  display: flex; 
+  flex-direction: column; 
   align-items: center;
   padding: 2rem;
 }
@@ -48,32 +47,22 @@ body {
   margin-bottom: 10px;
 }
 
-button {
-  font-family: Arial, Helvetica, sans-serif;
-  padding: 17px 40px;
-  border-radius: 50px;
+.player-name-container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
-  border: 0;
-  background-color: white;
-  box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-size: 15px;
-  transition: all 0.5s ease;
 }
 
-button:hover {
-  letter-spacing: 3px;
-  background-color: hsl(117, 94%, 26%);
-  color: hsl(0, 0%, 100%);
-  box-shadow: hsl(117, 94%, 26%) 0px 7px 29px 0px;
-}
-
-button:active {
-  letter-spacing: 3px;
-  background-color: hsl(117, 94%, 26%);
-  color: hsl(0, 0%, 100%);
-  box-shadow: hsl(117, 94%, 26%) 0px 0px 0px 0px;
-  transform: translateY(10px);
-  transition: 100ms;
+#iniciar_partida{
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #0015ff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
