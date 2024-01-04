@@ -17,6 +17,7 @@ let playerNames = {}
 
 let playersWhoPlayedThisHand = [];
 let newPlayingHand = []
+let allCardsPlayed = [];
 
 
 function compareCards(cards, trump) {
@@ -243,6 +244,7 @@ async function main() {
             }
             trump = cardTrump(cards);
             console.log("o trunfo é", trump)
+            console.log('cards', cards)
             
 
         });
@@ -281,6 +283,18 @@ async function main() {
 
                 if (card.cardValue === 'A' && card.cardSuit === trump.cardSuit) {
                     const hasSevenOfTrump = player.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit);
+                    let isLastRound = false;
+                    const sevenOutGame = (allCardsPlayed && allCardsPlayed.cards) ? allCardsPlayed.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit) : false;                    
+                    
+                    if (player.cards.length < 2) {
+                        isLastRound = true;
+                    }
+                    if (hasSevenOfTrump || isLastRound || newPlayingHand.length < 3 || sevenOutGame) {
+
+                    } else {
+                        console.log("Você só pode jogar Ás de trunfo se tiver o 7 na mão, for na última rodada OU o 7 já ter sido jogado!");
+                    }
+
 
                 }
 
@@ -290,6 +304,7 @@ async function main() {
                     io.emit('gameData', { hands: players, playerNames });
                     io.emit('cardPlayed', { card, cardOwner: player.name });
                     newPlayingHand.push(card);
+                    allCardsPlayed.push(card);
                     playersWhoPlayedThisHand.push(socket.id);
 
                 } else {
@@ -320,39 +335,72 @@ async function main() {
             }
         }
 
-        socket.on("buyCard", () => {
-            const currentPlayer = players[currentPlayerIndex];
-            console.log(newPlayingHand.length)
-            if (newPlayingHand.length > 0) {
-                return
-            }
-            if (currentPlayer) {
-                for (let i = 0; i < 4; i++) {
-                    buyCardForPlayer(currentPlayer);
-                }
+        // socket.on("buyCard", () => {
+        //     for (let i = 0; i < 4; i++) {
+
+        //     const currentPlayer = players[currentPlayerIndex];
+        //     console.log(newPlayingHand.length)
+        //     if (newPlayingHand.length > 0) {
+        //         return
+        //     }
+
+        //     if (currentPlayer) {
+        //             buyCardForPlayer(currentPlayer);
+               
+        //         const nextBuyerIndex = nextPlayerIndex(currentPlayerIndex, (nextPlayer) =>
+        //             nextPlayer.team !== currentPlayer.team &&
+        //             !playersWhoPlayedThisHand.includes(nextPlayer.id)
+        //         );
         
-                const nextBuyerIndex = nextPlayerIndex(currentPlayerIndex, (nextPlayer) =>
-                    nextPlayer.team !== currentPlayer.team &&
-                    !playersWhoPlayedThisHand.includes(nextPlayer.id)
-                );
-        
-                if (nextBuyerIndex !== null) {
-                    currentPlayerIndex = nextBuyerIndex;
-                    console.log(`Jogador ${players[currentPlayerIndex].name} está comprando cartas.`);
-                    io.emit('nextPlayer', currentPlayerIndex);
-                } else {
-                    console.log("Todos os jogadores compraram cartas. Iniciar próxima fase do jogo.");
-                }
-            } else {
-                console.log("Player not found");
-            }
-        });
+        //         if (nextBuyerIndex !== null) {
+        //             currentPlayerIndex = nextBuyerIndex;
+        //             console.log(`Jogador ${players[currentPlayerIndex].name} está comprando cartas.`);
+        //             io.emit('nextPlayer', currentPlayerIndex);
+        //         } else {
+        //             console.log("Todos os jogadores compraram cartas. Iniciar próxima fase do jogo.");
+        //         }
+            
+        //     } else {
+        //         console.log("Player not found");
+        //     }
+        // }
+        // });
         
 
         socket.on("nextHand", (playingHand) => {
             console.log("catinga",trump)
             console.log('hmm', playingHand)
             nextHand(playingHand, trump);
+            for (let i = 0; i < 4; i++) {
+
+                const currentPlayer = players[currentPlayerIndex];
+                console.log(newPlayingHand.length)
+                if (newPlayingHand.length > 0) {
+                    return
+                }
+    
+                if (currentPlayer) {
+                        buyCardForPlayer(currentPlayer);
+                   
+                    const nextBuyerIndex = nextPlayerIndex(currentPlayerIndex, (nextPlayer) =>
+                        nextPlayer.team !== currentPlayer.team &&
+                        !playersWhoPlayedThisHand.includes(nextPlayer.id)
+                    );
+            
+                    if (nextBuyerIndex !== null) {
+                        currentPlayerIndex = nextBuyerIndex;
+                        console.log(`Jogador ${players[currentPlayerIndex].name} está comprando cartas.`);
+                        io.emit('nextPlayer', currentPlayerIndex);
+                    } else {
+                        console.log("Todos os jogadores compraram cartas. Iniciar próxima fase do jogo.");
+                    }
+                
+                } else {
+                    console.log("Player not found");
+                }
+            }
+
+
             io.emit('clearTable');
             
         })
@@ -377,7 +425,7 @@ async function main() {
         const delta = now - lastUpdate;
         tick(delta);
         lastUpdate = now;
-    }, 1000 / 32);
+    }, 1000 / 16);
     
 }
 

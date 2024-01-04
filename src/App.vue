@@ -68,9 +68,7 @@
 
   function buyCard() {
     socket.emit("buyCard");
-    socket.emit("buyCard");
-    socket.emit("buyCard");
-    socket.emit("buyCard");
+
   }
 
   function nextHand(playingHand) {
