@@ -4,7 +4,7 @@ Code made for a multiplayer game of cards called Bisca very popular in Brazil.
 To start the game you need 4 people, two for each team.
 
 ## Still under development
-Most bugs regarding the logic were fixed and **changes may occur during these last steps of development**.
+**Changes on the game logic may occur during these last steps of development**.
 
 ## Project Setup
 
