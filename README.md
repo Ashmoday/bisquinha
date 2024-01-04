@@ -1,14 +1,10 @@
 # bisca
 
-This template should help get you started developing with Vue 3 in Vite.
+Code made for a multiplayer game of cards called Bisca very popular in Brazil. 
+To start the game you need 4 people, two in each team so you can start playing.
 
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+## Still under development
+Most bugs regarding the logic were fixed and changes may occur during these last steps of development.
 
 ## Project Setup
 
@@ -16,13 +12,19 @@ See [Vite Configuration Reference](https://vitejs.dev/config/).
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Starting the front-end
 
 ```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+### Starting the backend
+
+```sh
+npm run server
+```
+
+### Building
 
 ```sh
 npm run build
