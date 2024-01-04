@@ -1,0 +1,68 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  background: repeating-linear-gradient(
+    to right,
+    #2a0000 0px, #2a0000 50px,
+    #8B0000 50px, #8B0000 100px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+#app {
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+  padding: 2rem;
+}
+
+.logo {
+  width: 400px;
+  height: 400px;
+  margin: 0 auto;
+  display: block;
+  transition: transform 0.5s ease-in-out;
+}
+
+.logo:hover {
+  transform: scale(1.2); 
+}
+
+.center-container {
+  text-align: center;
+  margin-top: 20px; 
+}
+
+.player-name-container input {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.player-name-container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#iniciar_partida{
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #0015ff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}

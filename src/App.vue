@@ -1,7 +1,6 @@
 <script setup>
   import { io } from "socket.io-client";
   import { onMounted, ref } from "vue";
-
   const socket = io("ws://localhost:3002");
   let players = [];
   const playerName = ref('');
@@ -13,7 +12,7 @@
 
 
 
-  onMounted( () => {
+  onMounted(() => {
     socket.on('connect', () => {
     });
        
@@ -113,15 +112,16 @@ function getCardSuitColor(cardSuit) {
 }
 
 </script>
-
 <template>
   <div>
-      <h1>hello</h1>
+    <img src="./logo.png" alt="Logo" class="logo" />
+    <div class="center-container">
+      <div class="player-name-container">
       <input v-model="playerName" placeholder="Seu nome" />
       <button type="submit" @click="enterGame">Entrar</button>
-
-      <button type="submit" @click="startGame">Iniciar Partida</button>
-
+    </div>
+      <button id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
+      </div>    
 
       <p v-if="gameStarted && currentPlayer">{{ currentPlayer.name }}</p>
 
