@@ -1,4 +1,4 @@
-# bisca
+# Bisquinha
 
 Code made for a multiplayer game of cards called Bisca very popular in Brazil. 
 To start the game you need 4 people, two in each team so you can start playing.
