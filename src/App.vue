@@ -18,7 +18,6 @@
        
   })
 
-
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
   })
@@ -109,8 +108,14 @@ function getCardSuitColor(cardSuit) {
     default:
       return '';
   }
-}
+  
+};
 
+function getPipCount(value) {
+      const numericValue = parseInt(value);
+      return isNaN(numericValue) ? 1 : numericValue;
+    }
+  
 </script>
 <template>
   <div>
@@ -128,22 +133,33 @@ function getCardSuitColor(cardSuit) {
        <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
       <ul class="card-container">
-        <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)" class="card">
-          <span class="card-value" :style="{ color: getCardSuitColor(card.cardSuit) }"  >{{ card.cardValue }}</span>
-          <span class="card-suit" :style="{ color: getCardSuitColor(card.cardSuit) }" v-html="getCardSuitSymbol(card.cardSuit)"></span>
+        <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
+          <div class="card" :data-suit="card.cardSuit" :data-value="card.cardValue">
+        <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
+        <div class="corner-number top">{{ card.cardValue }}</div>
+        <div class="corner-number bottom">{{ card.cardValue }}</div>
+          </div>
+
+
+          <!-- <span class="card-value" :style="{ color: getCardSuitColor(card.cardSuit) }"  >{{ card.cardValue }}</span>
+          <span class="card-suit" :style="{ color: getCardSuitColor(card.cardSuit) }" v-html="getCardSuitSymbol(card.cardSuit)"></span> -->
         </li>
       </ul>
     </div>
     <div v-if="playedCards.length > 0">
     <h2>Cartas Jogadas:</h2>
-    <ul>
+    <ul class="card-container">
         <li v-for="(play, index) in playedCards" :key="index" class="played-card">
-            {{ play.card }} (Jogador: {{ play.cardOwner }})
+        (Jogador: {{ play.cardOwner }}) 
+        <div class="card" :data-suit="play.card.cardSuit" :data-value="play.card.cardValue">
+        <div v-for="index in getPipCount(play.card.cardValue)" :key="index" class="pip"></div>
+        <div class="corner-number top">{{ play.card.cardValue }}</div>
+        <div class="corner-number bottom">{{ play.card.cardValue }}</div>
+        </div>
         </li>
     </ul>
 </div>
 
-    <button type="submit" @click="buyCard">Buy Card</button>
 
     <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
 
@@ -157,30 +173,448 @@ function getCardSuitColor(cardSuit) {
 
 
 
-<style scoped>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #DDD;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5em;
+}
+
+.card-container {
+  display: flex;
+  list-style-type: none; 
+  padding: 0; 
+  margin: 0; 
+}
+
 .card {
-  width: 100px;
-  height: 150px;
-  border: 1px solid #000;
+  --width: 5em;
+  --height: calc(var(--width) * 1.4);
+  width: var(--width);
+  height: var(--height);
+  background-color: white;
+  border: 1px solid black;
+  border-radius: .25em;
+  padding: 1em;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  align-items: center;
+  position: relative;
+  margin-left: 5px;
+}
+
+[data-suit="heart"].card,
+[data-suit="diamond"].card {
+  color: red;
+}
+
+[data-suit="spade"].card,
+[data-suit="club"].card {
+  color: black;
+}
+
+.pip {
+  grid-row-end: span 2;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+[data-suit="heart"] .pip {
+  background-image: url("assets/imgs/heart.svg");
+}
+
+[data-suit="diamond"] .pip {
+  background-image: url("assets/imgs/diamond.svg");
+}
+
+[data-suit="spade"] .pip {
+  background-image: url("assets/imgs/spade.svg");
+}
+
+[data-suit="club"] .pip {
+  background-image: url("assets/imgs/club.svg");
+}
+
+.corner-number {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  margin: 10px;
-  border-radius: 6px;
+  align-items: center;
+  letter-spacing: -.1em;
+  font-size: .8em;
 }
 
-.card-suit {
-  font-size: 20px;
+.corner-number.top {
+  top: .25em;
+  left: .25em;
 }
 
-.card-value {
-  font-size: 24px;
+.corner-number.bottom {
+  bottom: .25em;
+  right: .25em;
+  transform: rotate(180deg);
 }
-.card-container {
-  display: flex; /* Torna os elementos filhos flexíveis (um ao lado do outro) */
-  list-style-type: none; /* Remove os marcadores de lista padrão */
-  padding: 0; /* Remove o preenchimento padrão da lista */
-  margin: 0; /* Remove a margem padrão da lista */
+
+.corner-number::after {
+  line-height: 0;
+  display: block;
+  width: .5em;
+}
+
+[data-suit="heart"] .corner-number::after {
+  content: url("assets/imgs/heart.svg");
+}
+
+[data-suit="spade"] .corner-number::after {
+  content: url("assets/imgs/spade.svg");
+}
+
+[data-suit="club"] .corner-number::after {
+  content: url("assets/imgs/club.svg");
+}
+
+[data-suit="diamond"] .corner-number::after {
+  content: url("assets/imgs/diamond.svg");
+}
+
+[data-value="J"][data-suit="diamond"] .pip,
+[data-value="J"][data-suit="heart"] .pip {
+  background-image: url("assets/imgs/jack-red.svg");
+}
+[data-value="J"][data-suit="spade"] .pip,
+[data-value="J"][data-suit="club"] .pip {
+  background-image: url("assets/imgs/jack-black.svg");
+}
+
+[data-value="Q"][data-suit="diamond"] .pip,
+[data-value="Q"][data-suit="heart"] .pip {
+  background-image: url("assets/imgs/queen-red.svg");
+}
+[data-value="Q"][data-suit="spade"] .pip,
+[data-value="Q"][data-suit="club"] .pip {
+  background-image: url("assets/imgs/queen-black.svg");
+}
+
+[data-value="K"][data-suit="diamond"] .pip,
+[data-value="K"][data-suit="heart"] .pip {
+  background-image: url("assets/imgs/king-red.svg");
+}
+[data-value="K"][data-suit="spade"] .pip,
+[data-value="K"][data-suit="club"] .pip {
+  background-image: url("assets/imgs/king-black.svg");
+}
+
+[data-value="A"] .pip,
+[data-value="J"] .pip,
+[data-value="Q"] .pip,
+[data-value="K"] .pip {
+  grid-row-start: 2;
+  grid-column-start: 1;
+  grid-row-end: span 6;
+  grid-column-end: span 3;
+}
+
+[data-value="2"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 2;
+}
+
+[data-value="2"] .pip:nth-child(2) {
+  grid-row-start: 7;
+  grid-column-start: 2;
+  transform: rotate(180deg);
+}
+
+[data-value="3"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 2;
+}
+
+[data-value="3"] .pip:nth-child(2) {
+  grid-row-start: 4;
+  grid-column-start: 2;
+}
+
+[data-value="3"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 2;
+  transform: rotate(180deg);
+}
+
+[data-value="4"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="4"] .pip:nth-child(2) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="4"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="4"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="5"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="5"] .pip:nth-child(2) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="5"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="5"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="5"] .pip:nth-child(5) {
+  grid-row-start: 4;
+  grid-column-start: 2;
+}
+
+[data-value="6"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="6"] .pip:nth-child(2) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="6"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="6"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="6"] .pip:nth-child(5) {
+  grid-row-start: 4;
+  grid-column-start: 1;
+}
+
+[data-value="6"] .pip:nth-child(6) {
+  grid-row-start: 4;
+  grid-column-start: 3;
+}
+
+[data-value="7"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="7"] .pip:nth-child(2) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="7"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="7"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="7"] .pip:nth-child(5) {
+  grid-row-start: 4;
+  grid-column-start: 1;
+}
+
+[data-value="7"] .pip:nth-child(6) {
+  grid-row-start: 4;
+  grid-column-start: 3;
+}
+
+[data-value="7"] .pip:nth-child(7) {
+  grid-row-start: 2;
+  grid-column-start: 2;
+}
+
+[data-value="8"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="8"] .pip:nth-child(2) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="8"] .pip:nth-child(3) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="8"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="8"] .pip:nth-child(5) {
+  grid-row-start: 4;
+  grid-column-start: 1;
+}
+
+[data-value="8"] .pip:nth-child(6) {
+  grid-row-start: 4;
+  grid-column-start: 3;
+}
+
+[data-value="8"] .pip:nth-child(7) {
+  grid-row-start: 2;
+  grid-column-start: 2;
+}
+
+[data-value="8"] .pip:nth-child(8) {
+  grid-row-start: 6;
+  grid-column-start: 2;
+  transform: rotate(180deg);
+}
+
+[data-value="9"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="9"] .pip:nth-child(2) {
+  grid-row-start: 3;
+  grid-column-start: 1;
+}
+
+[data-value="9"] .pip:nth-child(3) {
+  grid-row-start: 5;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="9"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="9"] .pip:nth-child(5) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="9"] .pip:nth-child(6) {
+  grid-row-start: 3;
+  grid-column-start: 3;
+}
+
+[data-value="9"] .pip:nth-child(7) {
+  grid-row-start: 5;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="9"] .pip:nth-child(8) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="9"] .pip:nth-child(9) {
+  grid-row-start: 4;
+  grid-column-start: 2;
+}
+
+
+
+[data-value="10"] .pip:first-child {
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+[data-value="10"] .pip:nth-child(2) {
+  grid-row-start: 3;
+  grid-column-start: 1;
+}
+
+[data-value="10"] .pip:nth-child(3) {
+  grid-row-start: 5;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="10"] .pip:nth-child(4) {
+  grid-row-start: 7;
+  grid-column-start: 1;
+  transform: rotate(180deg);
+}
+
+[data-value="10"] .pip:nth-child(5) {
+  grid-row-start: 1;
+  grid-column-start: 3;
+}
+
+[data-value="10"] .pip:nth-child(6) {
+  grid-row-start: 3;
+  grid-column-start: 3;
+}
+
+[data-value="10"] .pip:nth-child(7) {
+  grid-row-start: 5;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="10"] .pip:nth-child(8) {
+  grid-row-start: 7;
+  grid-column-start: 3;
+  transform: rotate(180deg);
+}
+
+[data-value="10"] .pip:nth-child(9) {
+  grid-row-start: 2;
+  grid-column-start: 2;
+}
+
+[data-value="10"] .pip:nth-child(10) {
+  grid-row-start: 6;
+  grid-column-start: 2;
+  transform: rotate(180deg);
 }
 </style>
