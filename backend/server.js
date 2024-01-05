@@ -19,6 +19,7 @@ let playersWhoPlayedThisHand = [];
 let newPlayingHand = []
 let allCardsPlayed = [];
 
+app.use('/', express.static('/build'))
 
 function compareCards(cards, trump) {
     if (cards.length !== 4) {
