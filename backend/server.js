@@ -245,7 +245,8 @@ async function main() {
             trump = cardTrump(cards);
             console.log("o trunfo é", trump)
             console.log('cards', cards)
-            
+            // let gameStart = true;
+            // io.emit('gameStart', {gameStart, trump});
 
         });
 
@@ -334,37 +335,6 @@ async function main() {
                 console.log("Não é possível comprar mais cartas.");
             }
         }
-
-        // socket.on("buyCard", () => {
-        //     for (let i = 0; i < 4; i++) {
-
-        //     const currentPlayer = players[currentPlayerIndex];
-        //     console.log(newPlayingHand.length)
-        //     if (newPlayingHand.length > 0) {
-        //         return
-        //     }
-
-        //     if (currentPlayer) {
-        //             buyCardForPlayer(currentPlayer);
-               
-        //         const nextBuyerIndex = nextPlayerIndex(currentPlayerIndex, (nextPlayer) =>
-        //             nextPlayer.team !== currentPlayer.team &&
-        //             !playersWhoPlayedThisHand.includes(nextPlayer.id)
-        //         );
-        
-        //         if (nextBuyerIndex !== null) {
-        //             currentPlayerIndex = nextBuyerIndex;
-        //             console.log(`Jogador ${players[currentPlayerIndex].name} está comprando cartas.`);
-        //             io.emit('nextPlayer', currentPlayerIndex);
-        //         } else {
-        //             console.log("Todos os jogadores compraram cartas. Iniciar próxima fase do jogo.");
-        //         }
-            
-        //     } else {
-        //         console.log("Player not found");
-        //     }
-        // }
-        // });
         
 
         socket.on("nextHand", (playingHand) => {

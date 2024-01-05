@@ -9,7 +9,7 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-
+  const trump = ref([])
 
 
   onMounted(() => {
@@ -17,6 +17,14 @@
     });
        
   })
+
+  // socket.on('gameStart', ({gameStart, trump2}) => {
+  //   gameStarted.value = gameStart;
+
+  //   trump.value.push({trump2})
+  //   console.log('oii', gameStarted.value)
+  //   console.log('trump', trump)
+  // })
 
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
@@ -47,7 +55,7 @@
         socket.on('gameData', ({ hands, playerNames }) => {
         playerHands.value = hands;
         playerNames.value = playerNames; 
-        gameStarted.value = true;
+        // gameStarted.value = true;
       
     })
   }
@@ -429,152 +437,4 @@ body {
   grid-column-start: 2;
 }
 
-[data-value="8"] .pip:first-child {
-  grid-row-start: 1;
-  grid-column-start: 1;
-}
-
-[data-value="8"] .pip:nth-child(2) {
-  grid-row-start: 1;
-  grid-column-start: 3;
-}
-
-[data-value="8"] .pip:nth-child(3) {
-  grid-row-start: 7;
-  grid-column-start: 1;
-  transform: rotate(180deg);
-}
-
-[data-value="8"] .pip:nth-child(4) {
-  grid-row-start: 7;
-  grid-column-start: 3;
-  transform: rotate(180deg);
-}
-
-[data-value="8"] .pip:nth-child(5) {
-  grid-row-start: 4;
-  grid-column-start: 1;
-}
-
-[data-value="8"] .pip:nth-child(6) {
-  grid-row-start: 4;
-  grid-column-start: 3;
-}
-
-[data-value="8"] .pip:nth-child(7) {
-  grid-row-start: 2;
-  grid-column-start: 2;
-}
-
-[data-value="8"] .pip:nth-child(8) {
-  grid-row-start: 6;
-  grid-column-start: 2;
-  transform: rotate(180deg);
-}
-
-[data-value="9"] .pip:first-child {
-  grid-row-start: 1;
-  grid-column-start: 1;
-}
-
-[data-value="9"] .pip:nth-child(2) {
-  grid-row-start: 3;
-  grid-column-start: 1;
-}
-
-[data-value="9"] .pip:nth-child(3) {
-  grid-row-start: 5;
-  grid-column-start: 1;
-  transform: rotate(180deg);
-}
-
-[data-value="9"] .pip:nth-child(4) {
-  grid-row-start: 7;
-  grid-column-start: 1;
-  transform: rotate(180deg);
-}
-
-[data-value="9"] .pip:nth-child(5) {
-  grid-row-start: 1;
-  grid-column-start: 3;
-}
-
-[data-value="9"] .pip:nth-child(6) {
-  grid-row-start: 3;
-  grid-column-start: 3;
-}
-
-[data-value="9"] .pip:nth-child(7) {
-  grid-row-start: 5;
-  grid-column-start: 3;
-  transform: rotate(180deg);
-}
-
-[data-value="9"] .pip:nth-child(8) {
-  grid-row-start: 7;
-  grid-column-start: 3;
-  transform: rotate(180deg);
-}
-
-[data-value="9"] .pip:nth-child(9) {
-  grid-row-start: 4;
-  grid-column-start: 2;
-}
-
-
-
-[data-value="10"] .pip:first-child {
-  grid-row-start: 1;
-  grid-column-start: 1;
-}
-
-[data-value="10"] .pip:nth-child(2) {
-  grid-row-start: 3;
-  grid-column-start: 1;
-}
-
-[data-value="10"] .pip:nth-child(3) {
-  grid-row-start: 5;
-  grid-column-start: 1;
-  transform: rotate(180deg);
-}
-
-[data-value="10"] .pip:nth-child(4) {
-  grid-row-start: 7;
-  grid-column-start: 1;
-  transform: rotate(180deg);
-}
-
-[data-value="10"] .pip:nth-child(5) {
-  grid-row-start: 1;
-  grid-column-start: 3;
-}
-
-[data-value="10"] .pip:nth-child(6) {
-  grid-row-start: 3;
-  grid-column-start: 3;
-}
-
-[data-value="10"] .pip:nth-child(7) {
-  grid-row-start: 5;
-  grid-column-start: 3;
-  transform: rotate(180deg);
-}
-
-[data-value="10"] .pip:nth-child(8) {
-  grid-row-start: 7;
-  grid-column-start: 3;
-  transform: rotate(180deg);
-}
-
-[data-value="10"] .pip:nth-child(9) {
-  grid-row-start: 2;
-  grid-column-start: 2;
-}
-
-[data-value="10"] .pip:nth-child(10) {
-  grid-row-start: 6;
-  grid-column-start: 2;
-  transform: rotate(180deg);
-}
 </style>
