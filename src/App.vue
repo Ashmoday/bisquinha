@@ -99,11 +99,10 @@ function getPipCount(value) {
       <ul class="card-container">
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
           <div class="card" :data-suit="card.cardSuit" :data-value="card.cardValue">
-        <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
-        <div class="corner-number top">{{ card.cardValue }}</div>
-        <div class="corner-number bottom">{{ card.cardValue }}</div>
+          <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
+          <div class="corner-number top">{{ card.cardValue }}</div>
+          <div class="corner-number bottom">{{ card.cardValue }}</div>
           </div>
->
         </li>
       </ul>
     </div>
