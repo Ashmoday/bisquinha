@@ -9,7 +9,7 @@ const httpServer = createServer(app);
 
 
 const cardValues= ['2', '3', '4', '5', '6', 'Q', 'J', 'K', '7', 'A'];
-const cardSuits = ['Copas', 'Ouros', 'Paus', 'Espadas'];
+const cardSuits = ['heart', 'diamond', 'club', 'spade'];
 
 
 let players = [];

@@ -27,7 +27,6 @@
   })
   
   socket.on('cardPlayed', ({ card, cardOwner }) => {
-    // Adicione a carta jogada à lista
     playedCards.value.push({ card, cardOwner });
 });
   socket.on('players', (serverPlayers) => {
@@ -64,11 +63,6 @@
     }
   }
 
-  function buyCard() {
-    socket.emit("buyCard");
-
-  }
-
   function nextHand(playingHand) {
     socket.emit('nextHand', (playingHand));
   }
@@ -80,36 +74,6 @@
 
 
 
-  function getCardSuitSymbol(cardSuit) {
-  switch (cardSuit) {
-    case 'Copas':
-      return '&#x2665;'; // Coração
-    case 'Ouros':
-      return '&#x2666;'; // Diamante
-    case 'Paus':
-      return '&#x2663;'; // Paus
-    case 'Espadas':
-      return '&#x2660;'; // Espadas
-    default:
-      return '';
-  }
-}
-
-
-function getCardSuitColor(cardSuit) {
-  switch (cardSuit) {
-    case 'Copas':
-      return 'red';
-    case 'Ouros':
-      return 'orange';
-    case 'Paus':
-    case 'Espadas':
-      return 'black';
-    default:
-      return '';
-  }
-  
-};
 
 function getPipCount(value) {
       const numericValue = parseInt(value);
@@ -139,10 +103,7 @@ function getPipCount(value) {
         <div class="corner-number top">{{ card.cardValue }}</div>
         <div class="corner-number bottom">{{ card.cardValue }}</div>
           </div>
-
-
-          <!-- <span class="card-value" :style="{ color: getCardSuitColor(card.cardSuit) }"  >{{ card.cardValue }}</span>
-          <span class="card-suit" :style="{ color: getCardSuitColor(card.cardSuit) }" v-html="getCardSuitSymbol(card.cardSuit)"></span> -->
+>
         </li>
       </ul>
     </div>
