@@ -19,7 +19,9 @@ let playersWhoPlayedThisHand = [];
 let newPlayingHand = []
 let allCardsPlayed = [];
 
-app.use('/', express.static('../dist'))
+let cardsTeam1 = [];
+let cardsTeam2 = [];
+
 
 function compareCards(cards, trump) {
     if (cards.length !== 4) {
@@ -38,8 +40,6 @@ function compareCards(cards, trump) {
 
         cards[cards.indexOf(trumpsInHand[0])] = cards[0];
         cards[0] = trumpsInHand[0];
-
-        console.log(cards)
 
         return cards[0];
     }
@@ -66,6 +66,56 @@ function compareCards(cards, trump) {
     return cards[0];
 }
 
+let team1Points = 0;
+let team2Points = 0;
+
+function countPoints(cards, winnerTeam) {
+
+    if (winnerTeam == 1) {
+    cards.forEach(card => {
+        switch (card.cardValue) {
+                case 'K':
+                team1Points += 4;
+                break;
+                case 'A':
+                team1Points += 11;
+                break;
+                case '7':
+                team1Points += 10;
+                break;
+                case 'J':
+                team1Points += 3;
+                break;
+                case 'Q':
+                team1Points += 2;
+                break;
+            }
+        })
+    }
+
+    if (winnerTeam == 2) {
+        cards.forEach(card => {
+            switch (card.cardValue) {
+                    case 'K':
+                    team2Points += 4;
+                    break;
+                    case 'A':
+                    team2Points += 11;
+                    break;
+                    case '7':
+                    team2Points += 10;
+                    break;
+                    case 'J':
+                    team2Points += 3;
+                    break;
+                    case 'Q':
+                    team2Points += 2;
+                    break;
+                }
+            })
+        }
+  
+  }
 
 
 
@@ -86,11 +136,22 @@ function nextHand(playingHand, trump) {
     }
 
     console.log('A maior carta na mão jogada é:', bigCard);
+    let winnerTeam = players[bigCardOwnerIndex].team
+
+    if (winnerTeam == 1) {
+        cardsTeam1.push(...playingHand.map(item => item.card));
+        console.log(cardsTeam1);
+        countPoints(cardsTeam1, winnerTeam);
+
+    }
+    if (winnerTeam == 2) {
+        cardsTeam2.push(...playingHand.map(item => item.card));
+        countPoints(cardsTeam2, winnerTeam);
+    }   
 
     playersWhoPlayedThisHand = [];
     playingHand = [];
     newPlayingHand = []
-    
 }
 
 
@@ -107,7 +168,7 @@ function nextPlayer() {
       }
     }
   
-    return null;
+    return null;    
   }
   
 function nextPlayerIndex(startingIndex, condition) {
@@ -245,7 +306,7 @@ async function main() {
             }
             trump = cardTrump(cards);
             console.log("o trunfo é", trump)
-            console.log('cards', cards)
+            io.emit('gameStart', {cards});
             // let gameStart = true;
             // io.emit('gameStart', {gameStart, trump});
 
@@ -291,7 +352,7 @@ async function main() {
                     if (player.cards.length < 2) {
                         isLastRound = true;
                     }
-                    if (hasSevenOfTrump || isLastRound || newPlayingHand.length < 3 || sevenOutGame) {
+                    if (hasSevenOfTrump || isLastRound || sevenOutGame) {
 
                     } else {
                         console.log("Você só pode jogar Ás de trunfo se tiver o 7 na mão, for na última rodada OU o 7 já ter sido jogado!");
@@ -339,8 +400,6 @@ async function main() {
         
 
         socket.on("nextHand", (playingHand) => {
-            console.log("catinga",trump)
-            console.log('hmm', playingHand)
             nextHand(playingHand, trump);
             for (let i = 0; i < 4; i++) {
 
@@ -373,6 +432,13 @@ async function main() {
 
 
             io.emit('clearTable');
+
+            if (cards.length === 0 && players.every(player => player.cards.length === 0)) {
+                gameInProgress = false;
+                console.log("Fim do jogo!");
+                console.log("Time 1", team1Points);
+                console.log('time2', team2Points);
+            }
             
         })
 
