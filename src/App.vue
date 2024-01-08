@@ -10,7 +10,8 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-  const enteringGame = ref(false); // Adicione esta linha
+  let trump = ref([])
+  const gameCards = ref([]);
 
   onMounted(() => {
     socket.on('connect', () => {
@@ -19,6 +20,23 @@
       }
     });
   });
+
+  socket.on('gameStart', (cards) => {
+    // gameCards.value = [];
+    gameCards.value = cards
+    console.log(gameCards.value);
+    console.log("oi", gameCards.value.cards.length)
+    trump = gameCards.value.cards[gameCards.value.cards.length - 1];
+
+  })
+
+  // socket.on('gameStart', ({gameStart, trump2}) => {
+  //   gameStarted.value = gameStart;
+
+  //   trump.value.push({trump2})
+  //   console.log('oii', gameStarted.value)
+  //   console.log('trump', trump)
+  // })
 
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
@@ -68,12 +86,12 @@
   }
 
   function startGame() {
-    socket.emit("start")
-    socket.on('gameData', ({ hands, playerNames }) => {
-      playerHands.value = hands;
-      playerNames.value = playerNames; 
-      gameStarted.value = true;
-      applyWhiteBackground(); 
+        socket.emit("start")
+        socket.on('gameData', ({ hands, playerNames }) => {
+        playerHands.value = hands;
+        playerNames.value = playerNames; 
+        // gameStarted.value = true;
+      
     })
   }
   function playCard(card, cardOwner) {
@@ -150,6 +168,15 @@ function getPipCount(value) {
     <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
     <button type="submit" @click="selectTeam(1)">Time 1</button>
     <button type="submit" @click="selectTeam(2)">Time 2</button>
+
+  </div>
+  <div class="trump">
+        Trunfo
+        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
+        <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
+        <div class="corner-number top">{{ trump.cardValue }}</div>
+        <div class="corner-number bottom">{{ trump.cardValue }}</div>
+         </div>
   </div>
 </template>
 
