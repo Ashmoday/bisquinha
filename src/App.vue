@@ -9,7 +9,7 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-  let trump = ref([])
+  let trump = ref(null)
   const gameCards = ref([]);
 
   onMounted(() => {
@@ -22,6 +22,7 @@
     // gameCards.value = [];
     gameCards.value = cards;
     trump = gameCards.value.cards[gameCards.value.cards.length - 1];
+    console.log(trump)
 
   })
 
@@ -142,13 +143,13 @@ function getPipCount(value) {
     <button type="submit" @click="selectTeam(2)">Time 2</button>
 
   </div>
-  <div v-if="trump.length > 0" class="trump">
+  <div v-if="trump" class="trump">
         Trunfo
         <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
         <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
         <div class="corner-number top">{{ trump.cardValue }}</div>
         <div class="corner-number bottom">{{ trump.cardValue }}</div>
-         </div>
+        </div>
   </div>
 </template>
 
