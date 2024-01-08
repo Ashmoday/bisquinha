@@ -20,9 +20,7 @@
 
   socket.on('gameStart', (cards) => {
     // gameCards.value = [];
-    gameCards.value = cards
-    console.log(gameCards.value);
-    console.log("oi", gameCards.value.cards.length)
+    gameCards.value = cards;
     trump = gameCards.value.cards[gameCards.value.cards.length - 1];
 
   })
@@ -144,7 +142,7 @@ function getPipCount(value) {
     <button type="submit" @click="selectTeam(2)">Time 2</button>
 
   </div>
-  <div class="trump">
+  <div v-if="trump.length > 0" class="trump">
         Trunfo
         <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
         <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
