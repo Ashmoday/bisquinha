@@ -9,13 +9,22 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-  const trump = ref([])
-
+  let trump = ref([])
+  const gameCards = ref([]);
 
   onMounted(() => {
     socket.on('connect', () => {
     });
        
+  })
+
+  socket.on('gameStart', (cards) => {
+    // gameCards.value = [];
+    gameCards.value = cards
+    console.log(gameCards.value);
+    console.log("oi", gameCards.value.cards.length)
+    trump = gameCards.value.cards[gameCards.value.cards.length - 1];
+
   })
 
   // socket.on('gameStart', ({gameStart, trump2}) => {
@@ -134,8 +143,14 @@ function getPipCount(value) {
     <button type="submit" @click="selectTeam(1)">Time 1</button>
     <button type="submit" @click="selectTeam(2)">Time 2</button>
 
-    
-
+  </div>
+  <div class="trump">
+        Trunfo
+        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
+        <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
+        <div class="corner-number top">{{ trump.cardValue }}</div>
+        <div class="corner-number bottom">{{ trump.cardValue }}</div>
+         </div>
   </div>
 </template>
 
