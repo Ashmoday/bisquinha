@@ -11,6 +11,7 @@
   let gameStarted = ref(false);
   let trump = ref(null)
   const gameCards = ref([]);
+  let player;
 
   onMounted(() => {
     socket.on('connect', () => {
@@ -22,7 +23,10 @@
     // gameCards.value = [];
     gameCards.value = cards;
     trump = gameCards.value.cards[gameCards.value.cards.length - 1];
-    console.log(trump)
+    // console.log(trump)
+    console.log(playerHands)
+    player = players.find(player => player.name === playerName.value);
+    console.log(player);
 
   })
 
@@ -33,6 +37,10 @@
   //   console.log('oii', gameStarted.value)
   //   console.log('trump', trump)
   // })
+  socket.on('started', (gameStatus) => {
+      gameStarted= gameStatus
+      console.log(gameStarted);
+  })
 
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
@@ -62,9 +70,7 @@
         socket.emit("start")
         socket.on('gameData', ({ hands, playerNames }) => {
         playerHands.value = hands;
-        playerNames.value = playerNames; 
-        // gameStarted.value = true;
-      
+        playerNames.value = playerNames;      
     })
   }
   function playCard(card, cardOwner) {
@@ -84,6 +90,7 @@
   }
 
   function selectTeam(team) {
+    if (gameStarted == true) return;
     socket.emit("selectTeam", team);
   }
 
@@ -112,13 +119,18 @@ function getPipCount(value) {
 
        <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
-      <ul class="card-container">
+      <ul v-if="gameStarted && player.team == hand.team" class="card-container">
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
           <div class="card" :data-suit="card.cardSuit" :data-value="card.cardValue">
           <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
           <div class="corner-number top">{{ card.cardValue }}</div>
           <div class="corner-number bottom">{{ card.cardValue }}</div>
           </div>
+        </li>
+      </ul>
+      <ul v-else class="card-container">
+        <li v-for="card in hand.cards" :key="card.id">
+          <div class="back"></div>
         </li>
       </ul>
     </div>
@@ -187,7 +199,23 @@ body {
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(8, 1fr);
   align-items: center;
-  position: relative;
+  position: relative; 
+  margin-left: 5px;
+}
+.back {
+  --width: 5em;
+  --height: calc(var(--width) * 1.4);
+  width: var(--width);
+  height: var(--height);
+  background-color: rgb(92, 39, 39);
+  border: 1px solid black;
+  border-radius: .25em;
+  padding: 1em;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  align-items: center;
+  position: relative; 
   margin-left: 5px;
 }
 
