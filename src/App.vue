@@ -10,8 +10,10 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-  let trump = ref([])
+  let trump = ref([]);
   const gameCards = ref([]);
+  const enteringGame = ref(false);
+  const connectedPlayers = ref(0);
 
   onMounted(() => {
     socket.on('connect', () => {
@@ -22,40 +24,34 @@
   });
 
   socket.on('gameStart', (cards) => {
-    // gameCards.value = [];
     gameCards.value = cards;
     trump = gameCards.value.cards[gameCards.value.cards.length - 1];
-
-  })
-
-  // socket.on('gameStart', ({gameStart, trump2}) => {
-  //   gameStarted.value = gameStart;
-
-  //   trump.value.push({trump2})
-  //   console.log('oii', gameStarted.value)
-  //   console.log('trump', trump)
-  // })
+  });
 
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
-  })
+  });
+
   socket.on('clearTable', () => {
     playedCards.value = [];
     playingHand = [];
-  })
-  
+  });
+
   socket.on('cardPlayed', ({ card, cardOwner }) => {
     playedCards.value.push({ card, cardOwner });
-});
-  socket.on('players', (serverPlayers) => {
-        players = serverPlayers;
-  })
-      socket.on('gameData', ({ hands, playerNames }) => {
-      playerHands.value = hands;
-      playerNames.value = playerNames;
-    });
+  });
 
-    function applyWhiteBackground() {
+  socket.on('players', (serverPlayers) => {
+    players = serverPlayers;
+    connectedPlayers.value = players.length;
+  });
+
+  socket.on('gameData', ({ hands, playerNames }) => {
+    playerHands.value = hands;
+    playerNames.value = playerNames;
+  });
+
+  function applyWhiteBackground() {
     const appElement = document.getElementById('app');
     const logoElement = document.querySelector('.logo');
 
@@ -63,65 +59,62 @@
       appElement.style.backgroundColor = 'white';
       appElement.style.border = '1px solid #636363';
       appElement.style.width = '50%';
-      appElement.style.height = '100%';  // Corrigido para cobrir toda a altura da página
+      appElement.style.height = '100%';
       appElement.style.margin = '0 auto';
       appElement.style.background = 'linear-gradient(to right, #f0f0f0, white)';
 
-      logoElement.style.width = '150px'; 
-      logoElement.style.height = '150px'; 
-      logoElement.style.margin = '10px'; 
-      logoElement.style.position = 'fixed'; 
-      logoElement.style.top = '10px'; 
-      logoElement.style.left = '40px'; 
+      logoElement.style.width = '150px';
+      logoElement.style.height = '150px';
+      logoElement.style.margin = '10px';
+      logoElement.style.position = 'fixed';
+      logoElement.style.top = '10px';
+      logoElement.style.left = '40px';
     }
 
     enteringGame.value = true;
   }
 
-  function enterGame(){
-      socket.emit("enterGame", playerName.value);
-      applyWhiteBackground();
+  const waitingForPlayers = ref(true);
+
+  function enterGame() {
+    socket.emit("enterGame", playerName.value);
+    applyWhiteBackground();
+    waitingForPlayers.value = false;
   }
 
   function startGame() {
-        socket.emit("start")
-        socket.on('gameData', ({ hands, playerNames }) => {
-        playerHands.value = hands;
-        playerNames.value = playerNames; 
-        // gameStarted.value = true;
-      
-    })
+    socket.emit("start");
+    socket.on('gameData', ({ hands, playerNames }) => {
+      playerHands.value = hands;
+      playerNames.value = playerNames;
+      waitingForPlayers.value = false; 
+      // gameStarted.value = true;
+    });
   }
-  function playCard(card, cardOwner) {
-    
-    if (cardOwner === playerName.value) {
-      playingHand.push({card, cardOwner});
-      // playedCards.value.push({ card, cardOwner });
 
-      socket.emit("playCard", (card))
+  function playCard(card, cardOwner) {
+    if (cardOwner === playerName.value) {
+      playingHand.push({ card, cardOwner });
+      socket.emit("playCard", card);
     } else {
       console.log(`Você não pode jogar a carta da mão de ${cardOwner}.`);
     }
   }
 
   function nextHand(playingHand) {
-    socket.emit('nextHand', (playingHand));
+    socket.emit('nextHand', playingHand);
   }
 
   function selectTeam(team) {
     socket.emit("selectTeam", team);
   }
 
-
-
-
-
-function getPipCount(value) {
-      const numericValue = parseInt(value);
-      return isNaN(numericValue) ? 1 : numericValue;
-    }
-  
+  function getPipCount(value) {
+    const numericValue = parseInt(value);
+    return isNaN(numericValue) ? 1 : numericValue;
+  }
 </script>
+
 <template>
   <div class="app">
     <img src="./logo.png" alt="Logo" class="logo" />
@@ -131,9 +124,8 @@ function getPipCount(value) {
         <button type="submit" @click="enterGame">Entrar</button>
       </div>
       <button id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
-    </div>    
+    </div>
 
-    <h2 v-if="enteringGame">Aguardando a conexão de todos os jogadores...</h2>
     <p v-if="gameStarted && currentPlayer">{{ currentPlayer.name }}</p>
 
     <div v-for="(hand, index) in playerHands" :key="hand.id">
@@ -141,24 +133,24 @@ function getPipCount(value) {
       <ul class="card-container">
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
           <div class="card" :data-suit="card.cardSuit" :data-value="card.cardValue">
-          <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
-          <div class="corner-number top">{{ card.cardValue }}</div>
-          <div class="corner-number bottom">{{ card.cardValue }}</div>
+            <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
+            <div class="corner-number top">{{ card.cardValue }}</div>
+            <div class="corner-number bottom">{{ card.cardValue }}</div>
           </div>
         </li>
       </ul>
     </div>
 
     <div v-if="playedCards.length > 0">
-    <h2>Cartas Jogadas:</h2>
-    <ul class="card-container">
+      <h2>Cartas Jogadas:</h2>
+      <ul class="card-container">
         <li v-for="(play, index) in playedCards" :key="index" class="played-card">
-        (Jogador: {{ play.cardOwner }}) 
-        <div class="card" :data-suit="play.card.cardSuit" :data-value="play.card.cardValue">
-        <div v-for="index in getPipCount(play.card.cardValue)" :key="index" class="pip"></div>
-        <div class="corner-number top">{{ play.card.cardValue }}</div>
-        <div class="corner-number bottom">{{ play.card.cardValue }}</div>
-        </div>
+          (Jogador: {{ play.cardOwner }})
+          <div class="card" :data-suit="play.card.cardSuit" :data-value="play.card.cardValue">
+            <div v-for="index in getPipCount(play.card.cardValue)" :key="index" class="pip"></div>
+            <div class="corner-number top">{{ play.card.cardValue }}</div>
+            <div class="corner-number bottom">{{ play.card.cardValue }}</div>
+          </div>
         </li>
       </ul>
     </div>
@@ -169,14 +161,15 @@ function getPipCount(value) {
 
   </div>
   <div v-if="trump.length > 0" class="trump">
-        Trunfo
-        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
-        <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
-        <div class="corner-number top">{{ trump.cardValue }}</div>
-        <div class="corner-number bottom">{{ trump.cardValue }}</div>
-         </div>
+    Trunfo
+    <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
+      <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
+      <div class="corner-number top">{{ trump.cardValue }}</div>
+      <div class="corner-number bottom">{{ trump.cardValue }}</div>
+    </div>
   </div>
 </template>
+
 
 
 
@@ -200,20 +193,25 @@ body {
 }
 
 .card {
-  --width: 10em; /* Alterado para um valor maior */
+  font-family: Verdana;
+  --width: 10em; 
   --height: calc(var(--width) * 1.4);
   width: var(--width);
   height: var(--height);
   background-color: white;
   border: 1px solid black;
   border-radius: .25em;
-  padding: 1em;
+  padding: 1.5em;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(8, 1fr);
   align-items: center;
   position: relative;
   margin-left: 5px;
+}
+
+.card:hover{
+    transform: scale(1.05);
 }
 
 
@@ -263,13 +261,13 @@ body {
 }
 
 .corner-number.top {
-  top: .25em;
-  left: .25em;
+  top: .10em;
+  left: .20em;
 }
 
 .corner-number.bottom {
-  bottom: .25em;
-  right: .25em;
+  bottom: .10em;
+  right: .20em;
   transform: rotate(180deg);
 }
 
@@ -342,14 +340,21 @@ body {
   background-image: url("assets/imgs/2_13.svg");
 }
 
-[data-value="A"] .pip,
-[data-value="J"] .pip,
-[data-value="Q"] .pip,
-[data-value="K"] .pip {
+[data-value="A"] .pip {
   grid-row-start: 2;
   grid-column-start: 1;
   grid-row-end: span 6;
   grid-column-end: span 3;
+}
+
+[data-value="J"] .pip,
+[data-value="Q"] .pip,
+[data-value="K"] .pip {
+  grid-row-start: 1; 
+  grid-column-start: 1; 
+  grid-row-end: span 8; 
+  grid-column-end: span 3; 
+  height: 100%; 
 }
 
 [data-value="2"] .pip:first-child {
