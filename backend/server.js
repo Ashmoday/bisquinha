@@ -267,6 +267,11 @@ async function main() {
 
         socket.on("enterGame", (playerName) => {
             if (players.length >= 4) return console.log("Lotado");
+            if (players.some(player => player.name === playerName)) {
+                console.log("Jogador com o mesmo nome já existe");
+                return;
+            }
+            
             players.push({
                 id: socket.id,
                 name: playerName,
@@ -289,11 +294,11 @@ async function main() {
         })
 
         socket.on("start", () => {
-            if (players.length < 4) {
-                return console.log('nem da meu querido')
-            }
-            let error = checkTeam(players);
-            if (error) return console.log(error);
+            // if (players.length < 4) {
+            //     return console.log('nem da meu querido')
+            // }
+            // let error = checkTeam(players);
+            // if (error) return console.log(error);
 
             io.emit('players', players);    
 
@@ -307,8 +312,8 @@ async function main() {
             trump = cardTrump(cards);
             console.log("o trunfo é", trump)
             io.emit('gameStart', {cards});
-            // let gameStart = true;
-            // io.emit('gameStart', {gameStart, trump});
+            let gameStart = true;
+            io.emit('started', (gameStart));
 
         });
 
