@@ -16,9 +16,6 @@
 
   onMounted(() => {
     socket.on('connect', () => {
-      if (gameStarted.value) {
-        applyWhiteBackground();
-      }
     });
   });
 
@@ -57,9 +54,12 @@
     playedCards.value.push({ card, cardOwner });
   });
 
+  let connectedPlayers = ref(0);  // Adição: Inicializa a variável connectedPlayers
+
   socket.on('players', (serverPlayers) => {
     players = serverPlayers;
     connectedPlayers.value = players.length;
+    // ... (seu código existente)
   });
 
   socket.on('gameData', ({ hands, playerNames }) => {
@@ -67,35 +67,17 @@
     playerNames.value = playerNames;
   });
 
-  function applyWhiteBackground() {
-    const appElement = document.getElementById('app');
-    const logoElement = document.querySelector('.logo');
-
-    if (appElement && logoElement) {
-      appElement.style.backgroundColor = 'white';
-      appElement.style.border = '1px solid #636363';
-      appElement.style.width = '50%';
-      appElement.style.height = '100%';
-      appElement.style.margin = '0 auto';
-      appElement.style.background = 'linear-gradient(to right, #f0f0f0, white)';
-
-      logoElement.style.width = '150px';
-      logoElement.style.height = '150px';
-      logoElement.style.margin = '10px';
-      logoElement.style.position = 'fixed';
-      logoElement.style.top = '10px';
-      logoElement.style.left = '40px';
-    }
-
-    enteringGame.value = true;
-  }
-
   const waitingForPlayers = ref(true);
+
+  const enteringGame = ref(true);
+
+  const enteredGame = ref(false);
 
   function enterGame() {
     socket.emit("enterGame", playerName.value);
-    applyWhiteBackground();
     waitingForPlayers.value = false;
+    enteringGame.value = false;
+    enteredGame.value = true;
   }
 
   function startGame() {
@@ -131,15 +113,28 @@
 </script>
 
 <template>
-  <div class="app">
-    <img src="./logo.png" alt="Logo" class="logo" />
-    <div class="center-container">
+  <div :class="{ 'app': true, 'white-background': !waitingForPlayers }">
+    <img v-if="waitingForPlayers" src="./logo.png" alt="Logo" class="logo" />
+    <div v-if="!waitingForPlayers" class="logo-corner">
+      <img src="./logo.png" alt="Logo" class="logo" />
+    </div>
+    <div class="center-container" v-if="waitingForPlayers">
       <div class="player-name-container">
         <input v-model="playerName" placeholder="Seu nome" />
         <button type="submit" @click="enterGame">Entrar</button>
       </div>
-      <button id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
     </div>
+    <div class="botoes-times" v-if="enteredGame">
+    <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
+    <button type="submit" @click="selectTeam(1)">Time 1</button>
+    <button type="submit" @click="selectTeam(2)">Time 2</button>
+  </div>
+    <button v-if="!waitingForPlayers" id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
+
+    <h2 v-if="enteredGame && !gameStarted">
+    <!-- Adição: Atualiza a mensagem com base no número de jogadores conectados -->
+    {{ connectedPlayers < 4 ? 'Aguardando a conexão dos jogadores...' : '4 jogadores conectados. Aguardando o início da partida!' }}
+  </h2>
 
     <p v-if="gameStarted && currentPlayer">{{ currentPlayer.name }}</p>
 
@@ -158,9 +153,16 @@
         <li v-for="card in hand.cards" :key="card.id">
           <div class="back"></div> 
         </li>
-      </ul>
+      </ul> 
     </div>
-
+      <div v-if="trump" class="trump">
+        Trunfo
+        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
+          <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
+          <div class="corner-number top">{{ trump.cardValue }}</div>
+          <div class="corner-number bottom">{{ trump.cardValue }}</div>
+        </div>
+      </div>    
     <div v-if="playedCards.length > 0">
       <h2>Cartas Jogadas:</h2>
       <ul class="card-container">
@@ -174,20 +176,13 @@
         </li>
       </ul>
     </div>
+    
+    
 
-    <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
-    <button type="submit" @click="selectTeam(1)">Time 1</button>
-    <button type="submit" @click="selectTeam(2)">Time 2</button>
+ 
+  </div>
 
-  </div>
-  <div v-if="trump" class="trump">
-        Trunfo
-        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
-        <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
-        <div class="corner-number top">{{ trump.cardValue }}</div>
-        <div class="corner-number bottom">{{ trump.cardValue }}</div>
-        </div>
-  </div>
+
 </template>
 
 
@@ -198,11 +193,37 @@
   box-sizing: border-box;
 }
 
-body {
-  background-color: #DDD;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5em;
+.botoes-times button{
+  flex-direction: flex;
+  padding: 15px;
+  background-color: #eeeeee;
+  color: rgb(0, 0, 0); /* Cor do texto branco */
+  border: 2px solid black;
+  padding: 10px 20px; /* Preenchimento interno */
+  font-size: 16px; /* Tamanho da fonte */
+  border: none; /* Remover borda */
+  border-radius: 5px; /* Borda arredondada */
+  cursor: pointer; /* Cursor ao passar por cima */
+  margin-right: 10px; /* Margem à direita para espaçamento entre os botões */
+  margin-bottom: 20px;
+  }
+
+.botoes-times button:hover{
+  background-color: #b8b8b8;
+  }
+
+.white-background {
+  height: 100vh; 
+  width: 70vw; 
+  background-color: white;
+}
+
+.logo-corner {
+  position: fixed;
+  height: 10px;
+  width: 10px;
+  top: 10px;
+  left: 10px;
 }
 
 .card-container {
@@ -229,12 +250,16 @@ body {
   position: relative; 
   margin-left: 5px;
 }
+
 .back {
   --width: 5em;
   --height: calc(var(--width) * 1.4);
   width: var(--width);
   height: var(--height);
   background-color: rgb(92, 39, 39);
+  background-image: url("assets/imgs/back.png");
+  background-size: cover;  /* Adicione esta linha para cobrir completamente o espaço */
+  background-position: center;
   border: 1px solid black;
   border-radius: .25em;
   padding: 1em;
