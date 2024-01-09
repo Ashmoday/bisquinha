@@ -10,10 +10,9 @@
   const playedCards = ref([]);
   let currentPlayer = ref([]);
   let gameStarted = ref(false);
-  let trump = ref([]);
+  let trump = ref(null)
   const gameCards = ref([]);
-  const enteringGame = ref(false);
-  const connectedPlayers = ref(0);
+  let player;
 
   onMounted(() => {
     socket.on('connect', () => {
@@ -26,7 +25,24 @@
   socket.on('gameStart', (cards) => {
     gameCards.value = cards;
     trump = gameCards.value.cards[gameCards.value.cards.length - 1];
-  });
+    // console.log(trump)
+    console.log(playerHands)
+    player = players.find(player => player.name === playerName.value);
+    console.log(player);
+
+  })
+
+  // socket.on('gameStart', ({gameStart, trump2}) => {
+  //   gameStarted.value = gameStart;
+
+  //   trump.value.push({trump2})
+  //   console.log('oii', gameStarted.value)
+  //   console.log('trump', trump)
+  // })
+  socket.on('started', (gameStatus) => {
+      gameStarted= gameStatus
+      console.log(gameStarted);
+  })
 
   socket.on('nextPlayer', (currentPlayerIndex) => {
     currentPlayer = players[currentPlayerIndex];
@@ -83,13 +99,11 @@
   }
 
   function startGame() {
-    socket.emit("start");
-    socket.on('gameData', ({ hands, playerNames }) => {
-      playerHands.value = hands;
-      playerNames.value = playerNames;
-      waitingForPlayers.value = false; 
-      // gameStarted.value = true;
-    });
+        socket.emit("start")
+        socket.on('gameData', ({ hands, playerNames }) => {
+        playerHands.value = hands;
+        playerNames.value = playerNames;      
+    })
   }
 
   function playCard(card, cardOwner) {
@@ -106,6 +120,7 @@
   }
 
   function selectTeam(team) {
+    if (gameStarted == true) return;
     socket.emit("selectTeam", team);
   }
 
@@ -130,13 +145,18 @@
 
     <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
-      <ul class="card-container">
+      <ul v-if="gameStarted && player.team == hand.team" class="card-container">
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
           <div class="card" :data-suit="card.cardSuit" :data-value="card.cardValue">
             <div v-for="index in getPipCount(card.cardValue)" :key="index" class="pip"></div>
             <div class="corner-number top">{{ card.cardValue }}</div>
             <div class="corner-number bottom">{{ card.cardValue }}</div>
           </div>
+        </li>
+      </ul>
+      <ul v-else class="card-container">
+        <li v-for="card in hand.cards" :key="card.id">
+          <div class="back"></div> 
         </li>
       </ul>
     </div>
@@ -160,13 +180,13 @@
     <button type="submit" @click="selectTeam(2)">Time 2</button>
 
   </div>
-  <div v-if="trump.length > 0" class="trump">
-    Trunfo
-    <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
-      <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
-      <div class="corner-number top">{{ trump.cardValue }}</div>
-      <div class="corner-number bottom">{{ trump.cardValue }}</div>
-    </div>
+  <div v-if="trump" class="trump">
+        Trunfo
+        <div class="card" :data-suit="trump.cardSuit" :data-value="trump.cardValue">
+        <div v-for="index in getPipCount(trump.cardValue)" :key="index" class="pip"></div>
+        <div class="corner-number top">{{ trump.cardValue }}</div>
+        <div class="corner-number bottom">{{ trump.cardValue }}</div>
+        </div>
   </div>
 </template>
 
@@ -206,7 +226,23 @@ body {
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(8, 1fr);
   align-items: center;
-  position: relative;
+  position: relative; 
+  margin-left: 5px;
+}
+.back {
+  --width: 5em;
+  --height: calc(var(--width) * 1.4);
+  width: var(--width);
+  height: var(--height);
+  background-color: rgb(92, 39, 39);
+  border: 1px solid black;
+  border-radius: .25em;
+  padding: 1em;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  align-items: center;
+  position: relative; 
   margin-left: 5px;
 }
 
