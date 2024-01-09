@@ -130,7 +130,7 @@ function getPipCount(value) {
       </ul>
       <ul v-else class="card-container">
         <li v-for="card in hand.cards" :key="card.id">
-          <div class="back"></div>
+          <div class="back"></div> 
         </li>
       </ul>
     </div>
