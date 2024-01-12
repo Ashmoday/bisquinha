@@ -12,6 +12,11 @@
   let trump = ref(null)
   const gameCards = ref([]);
   let player;
+  let allLobbies = ref([]);
+  let lobbyName;
+  let lobbyPassword;
+
+  let gameJoined = ref(false) ;
 
   onMounted(() => {
     socket.on('connect', () => {
@@ -30,6 +35,18 @@
 
   })
 
+  socket.on('updateLobbies', (lobbies) => {
+    allLobbies.value = lobbies;
+  })
+
+  socket.on('lobbyDestroyed', () => {
+      // Lógica para lidar com a lobby sendo destruída
+      gameJoined = false;
+      console.log('veio pra qm?')
+      socket.disconnect()
+
+    });
+
   // socket.on('gameStart', ({gameStart, trump2}) => {
   //   gameStarted.value = gameStart;
 
@@ -38,7 +55,7 @@
   //   console.log('trump', trump)
   // })
   socket.on('started', (gameStatus) => {
-      gameStarted= gameStatus
+      gameStarted = gameStatus
       console.log(gameStarted);
   })
 
@@ -62,9 +79,18 @@
     });
 
   function enterGame(){
+    if (playerName.value.length < 4) {
+            console.log("O nome do jogador deve ter pelo menos 4 caracteres.");
+            return;
+      }
+      gameJoined = true;
       socket.emit("enterGame", playerName.value);
       
   }
+
+  socket.on('user-connected', (userId) => {
+    console.log('User connected', userId);
+  })
 
   function startGame() {
         socket.emit("start")
@@ -97,27 +123,64 @@
 
 
 
-
 function getPipCount(value) {
       const numericValue = parseInt(value);
       return isNaN(numericValue) ? 1 : numericValue;
-    }
+}
   
+function createLobby() {
+  socket.emit('createLobby', {lobbyName, lobbyPassword})
+
+}
+
+function joinLobby(lobbyId) {
+  let player = playerName.value
+  console.log(lobbyId)
+  socket.emit('joinLobby', {lobbyId: lobbyId, password: "", player })
+}
+
 </script>
+
 <template>
   <div>
+    <!-- <div v-if="!gameJoined">   -->
     <img src="./logo.png" alt="Logo" class="logo" />
+
     <div class="center-container">
       <div class="player-name-container">
       <input v-model="playerName" placeholder="Seu nome" />
       <button type="submit" @click="enterGame">Entrar</button>
     </div>
+  </div>
+<!-- </div>     -->
+
+    <!-- <div v-if="gameJoined"> -->
+    <h2>Lista de Lobbies</h2>
+    <ul v-if="allLobbies.length > 0">
+      <li v-for="lobby in allLobbies" :key="lobby.id">
+        {{ lobby.name }} - Criado por: {{ lobby.createdBy }}
+        {{ lobby.id }}
+        <button @click="joinLobby(lobby.id)">Entrar</button>
+      </li>
+    </ul>
+
+
+
+    <h2>Criar Lobby</h2>
+    <form @submit.prevent="createLobby">
+      <label for="lobbyName">Nome do Lobby:</label>
+      <input type="text" v-model="lobbyName" required>
+      <label for="lobbyPassword">Senha (opcional):</label>
+      <input type="password" v-model="lobbyPassword">
+      <button type="submit">Criar Lobby</button>
+    </form>
+  <!-- </div> -->
+
       <button id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
-      </div>    
 
       <p v-if="gameStarted && currentPlayer">{{ currentPlayer.name }}</p>
 
-       <div v-for="(hand, index) in playerHands" :key="hand.id">
+      <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
       <ul v-if="gameStarted && player.team == hand.team" class="card-container">
         <li v-for="card in hand.cards" :key="card.id" @click="playCard(card, hand.name)">
