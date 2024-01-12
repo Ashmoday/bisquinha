@@ -14,6 +14,7 @@ const cardSuits = ['heart', 'diamond', 'club', 'spade'];
 
 let players = [];
 let playerNames = {}
+let lobbies = [];
 
 let playersWhoPlayedThisHand = [];
 let newPlayingHand = []
@@ -21,6 +22,13 @@ let allCardsPlayed = [];
 
 let cardsTeam1 = [];
 let cardsTeam2 = [];
+
+const io = new Server(httpServer, {
+    cors: {
+        origin: "http://localhost:5173"
+    }
+});
+
 
 
 function compareCards(cards, trump) {
@@ -58,7 +66,6 @@ function compareCards(cards, trump) {
         cards[cards.indexOf(suitsInHand[0])] = cards[0];
         cards[0] = suitsInHand[0];
 
-        console.log(cards)
 
         return cards[0];
     }
@@ -69,68 +76,47 @@ function compareCards(cards, trump) {
 let team1Points = 0;
 let team2Points = 0;
 
-function countPoints(cards, winnerTeam) {
+function countPoints(cards) {
+    let Points = 0;
 
-    if (winnerTeam == 1) {
+    
     cards.forEach(card => {
         switch (card.cardValue) {
                 case 'K':
-                team1Points += 4;
+                Points += 4;
                 break;
                 case 'A':
-                team1Points += 11;
+                Points += 11;
                 break;
                 case '7':
-                team1Points += 10;
+                Points += 10;
                 break;
                 case 'J':
-                team1Points += 3;
+                Points += 3;
                 break;
                 case 'Q':
-                team1Points += 2;
+                Points += 2;
                 break;
             }
         })
-    }
 
-    if (winnerTeam == 2) {
-        cards.forEach(card => {
-            switch (card.cardValue) {
-                    case 'K':
-                    team2Points += 4;
-                    break;
-                    case 'A':
-                    team2Points += 11;
-                    break;
-                    case '7':
-                    team2Points += 10;
-                    break;
-                    case 'J':
-                    team2Points += 3;
-                    break;
-                    case 'Q':
-                    team2Points += 2;
-                    break;
-                }
-            })
-        }
+        return Points;
   
   }
 
 
 
 
-function nextHand(playingHand, trump) {
+function nextHand(lobby, playingHand, trump) {
     if (!playingHand) return;
     if (playingHand.length < 1) return;
     const bigCard = compareCards(playingHand.map(entry => entry.card), trump);
     const bigCardOwner = playingHand.find(entry => entry.card === bigCard).cardOwner;
 
-
-    const bigCardOwnerIndex = players.findIndex(player => player.name === bigCardOwner);
+    const bigCardOwnerIndex = lobby.players.findIndex(player => player.name === bigCardOwner);
     if (bigCardOwnerIndex !== -1) {
         console.log('O índice do jogador correspondente é:', bigCardOwnerIndex);
-        currentPlayerIndex = bigCardOwnerIndex
+        lobby.currentPlayerIndex = bigCardOwnerIndex
     } else {
         console.log('Jogador não encontrado no array.');
     }
@@ -139,31 +125,32 @@ function nextHand(playingHand, trump) {
     let winnerTeam = players[bigCardOwnerIndex].team
 
     if (winnerTeam == 1) {
-        cardsTeam1.push(...playingHand.map(item => item.card));
-        console.log(cardsTeam1);
-        countPoints(cardsTeam1, winnerTeam);
-
+        lobby.cardsTeam1.push(...playingHand.map(item => item.card));
+        let points = countPoints(lobby.cardsTeam1);
+        lobby.team1Points =+ points;
     }
     if (winnerTeam == 2) {
-        cardsTeam2.push(...playingHand.map(item => item.card));
-        countPoints(cardsTeam2, winnerTeam);
+        lobby.cardsTeam2.push(...playingHand.map(item => item.card));
+        let points = countPoints(lobby.cardsTeam2);
+        lobby.team2Points =+ points;
     }   
 
-    playersWhoPlayedThisHand = [];
+    lobby.playersWhoPlayedThisHand = [];
     playingHand = [];
-    newPlayingHand = []
+    lobby.newPlayingHand = []
 }
 
 
-let currentPlayerIndex = 0;
+// let currentPlayerIndex = 0;
 
-function nextPlayer() {
-    for (let i = 1; i <= players.length; i++) {
-      const nextIndex = (currentPlayerIndex + i) % players.length;
-      const nextPlayer = players[nextIndex];
+function nextPlayer(lobby) {
+    for (let i = 1; i <= lobby.players.length; i++) {
+      const nextIndex = (lobby.currentPlayerIndex + i) % lobby.players.length;
+      const nextPlayer = lobby.players[nextIndex];
+
   
-      if (nextPlayer.team !== players[currentPlayerIndex].team && !playersWhoPlayedThisHand.includes(nextPlayer.id)) {
-        currentPlayerIndex = nextIndex;
+      if (nextPlayer.team !== lobby.players[lobby.currentPlayerIndex].team && !lobby.playersWhoPlayedThisHand.includes(nextPlayer.id)) {
+        lobby.currentPlayerIndex = nextIndex;
         return nextPlayer;
       }
     }
@@ -171,10 +158,10 @@ function nextPlayer() {
     return null;    
   }
   
-function nextPlayerIndex(startingIndex, condition) {
-    for (let i = 1; i <= players.length; i++) {
-        const nextIndex = (startingIndex + i) % players.length;
-        const nextPlayer = players[nextIndex];
+function nextPlayerIndex(lobby, startingIndex, condition) {
+    for (let i = 1; i <= lobby.players.length; i++) {
+        const nextIndex = (startingIndex + i) % lobby.players.length;
+        const nextPlayer = lobby.players[nextIndex];
 
         if (condition(nextPlayer)) {
             return nextIndex;
@@ -231,17 +218,17 @@ function distributeCards(cards, numberOfPlayers, cardsPerPlayer) {
 
 
 
-const io = new Server(httpServer, {
-    cors: {
-        origin: "http://localhost:5173"
-    }
-});
 
 
 function tick(delta) {
-    io.emit('players', players); 
-    io.emit('gameData', {hands: players, playerNames});
-    io.emit('nextPlayer', currentPlayerIndex)
+    for (let id in lobbies) {
+        io.to(lobbies[id].id).emit('players', lobbies[id].players); 
+        io.to(lobbies[id].id).emit('gameData', {hands: lobbies[id].players, playerNames});
+        io.to(lobbies[id].id).emit('nextPlayer', lobbies[id].currentPlayerIndex)
+    }
+
+    io.emit("updateLobbies", lobbies);
+
 }
 
 function checkTeam(players) {
@@ -265,83 +252,200 @@ async function main() {
     io.on('connect', (socket) => {
         console.log('user connected', socket.id);
 
+        socket.on("createLobby", (lobbyData) => {
+            const { lobbyName, password } = lobbyData;
+            const player = players.find(player => player.id === socket.id);
+            if (!player) {
+                console.log("Erro: jogador não encontrado.");
+                return;
+            }
+    
+            const lobby = {
+                id: socket.id,
+                name: lobbyName,
+                password: password || null,
+                players: [player],
+                createdBy: player.name,
+                gameStarted: false,
+                newPlayingHand: [],
+                allCardsPlayed: [],
+                playersWhoPlayedThisHand: [],
+                currentPlayerIndex: 0,
+                trump: [],
+                cards: [],
+                team1Points: 0,
+                team2Points: 0,
+                cardsTeam1: [],
+                cardsTeam2: []
+            };  
+
+            lobbies.push(lobby);
+            player.lobbyId = lobby.id;
+            io.to(socket.id).emit("lobbyCreated", lobby);
+            socket.join(lobby.id);        
+            io.emit("updateLobbies", lobbies);
+            console.log(lobbies)
+
+            socket.on("disconnect", () => {
+                const lobbyIndex = lobbies.findIndex(lobby => lobby.id === socket.id);
+                if (lobbyIndex !== -1) {
+                    const lobbyId = lobbies[lobbyIndex].id;
+
+                    // Se o criador saiu, destrua a lobby
+                    io.to(lobbyId).emit('players', []); 
+                    io.to(lobbyId).emit('gameData', {hands: [], playerNames});
+
+
+                    lobbies.splice(lobbyIndex, 1)[0];
+
+                    console.log(lobbies)
+
+                    io.emit("updateLobbies", lobbies);
+                }
+            });
+        });
+
+        socket.on("joinLobby", (lobbyData) => {
+            const { lobbyId, password, player } = lobbyData;
+
+            const lobby = lobbies.find((lobby) => lobby.id === lobbyId);
+            const myPlayer = players.find(player => player.id === socket.id);
+            if (lobby) {
+                if (lobby.password && lobby.password !== password) {
+                    io.to(socket.id).emit("invalidPassword");
+                    return;
+                }
+                if (lobby.players.length >= 4) return console.log("Lotado");
+
+                let playerInLobby = lobby.players.find((p) => p.id === myPlayer.id);
+                
+                if (playerInLobby) return console.log("Jogador já na lobby");
+
+                lobby.players.push({
+                    id: socket.id,
+                    name: player,
+                    cards: [],
+                    team: 0,
+                });
+                myPlayer.lobbyId = lobbyId;
+
+
+
+                socket.join(lobbyId);
+                socket.to(lobbyId).emit('user-connected', socket.id);
+        
+                io.to(socket.id).emit("joinedLobby", lobby);
+                io.emit("updateLobbies", lobbies);
+                // io.emit('players', players)
+                // console.log(players)
+                // console.log(lobbies)
+            } else {
+                io.to(socket.id).emit("lobbyNotFound");
+            }
+        });
+
         socket.on("enterGame", (playerName) => {
-            if (players.length >= 4) return console.log("Lotado");
             if (players.some(player => player.name === playerName)) {
                 console.log("Jogador com o mesmo nome já existe");
                 return;
             }
-            
+
             players.push({
                 id: socket.id,
                 name: playerName,
                 cards: [],
-                team: 0
+                team: 0,
+                lobbyId: null
             });
-            io.emit('players', players);
-            io.emit('gameData', {hands: players, playerNames});
+            // io.emit('players', players);
+            // io.emit('gameData', {hands: players, playerNames});
 
-        })
+        });
+
 
         socket.on("selectTeam", (team) =>  {
             const player = players.find(player => player.id === socket.id);
             if (!player) {
                 return
             }
-            player.team = team;
-            io.emit('players', players);
-            io.emit('gameData', {hands: players, playerNames});
+
+            const lobby = lobbies.find((lobby) => lobby.id === player.lobbyId);
+            if (lobby) {
+                const myPlayer = lobby.players.find((p) => p.id === player.id)
+                if (myPlayer) {
+                    myPlayer.team = team
+                  } else {
+                    console.log("Jogador não encontrado no lobby");
+                  }
+                } else {
+                  console.log("Lobby não encontrado");
+            }
+            io.to(player.lobbyId).emit('players', lobby.players);
+            // console.log(player.lobbyId)
+            // console.log('oii', players)
+            io.to(player.lobbyId).emit('gameData', {hands: lobby.players, playerNames});
         })
 
         socket.on("start", () => {
-            // if (players.length < 4) {
-            //     return console.log('nem da meu querido')
-            // }
-            // let error = checkTeam(players);
-            // if (error) return console.log(error);
 
-            io.emit('players', players);    
 
-            cards = createCards();
-            shuffle(cards);
-            const hands = distributeCards(cards, players.length, 3);
+            // io.emit('players', players);    
+            const player = players.find(player => player.id === socket.id);
+            const lobby = lobbies.find((lobby) => lobby.id === player.lobbyId);
 
-            for (let i = 0; i < players.length; i++) {
-                players[i].cards = hands[i];
+            if (lobby.players.length < 4) {
+                return console.log('nem da meu querido')
             }
-            trump = cardTrump(cards);
-            console.log("o trunfo é", trump)
-            io.emit('gameStart', {cards});
+            let error = checkTeam(lobby.players);
+            if (error) return console.log(error);
+
+
+            lobby.cards = createCards();
+            shuffle(lobby.cards);
+            const hands = distributeCards(lobby.cards, lobby.players.length, 3);
+
+            for (let i = 0; i < lobby.players.length; i++) {
+               lobby.players[i].cards = hands[i];
+            }
+            lobby.trump = cardTrump(lobby.cards);
+            console.log("o trunfo é", lobby.trump)
+            
+            io.to(lobby.id).emit('gameStart', (lobby.cards));
             let gameStart = true;
-            io.emit('started', (gameStart));
+            io.to(lobby.id).emit('started', (gameStart));
 
         });
 
         socket.on("playCard", (card) => {
             const player = players.find(player => player.id === socket.id);
-            
-            if (playersWhoPlayedThisHand.includes(socket.id)) {
+            const lobby = lobbies.find((lobby) => lobby.id === player.lobbyId);
+            if (lobby) {
+                const myPlayer = lobby.players.find((p) => p.id === player.id)
+
+            if (lobby.playersWhoPlayedThisHand.includes(socket.id)) {
                 console.log('Você já jogou uma carta nesta mão.');
                 return;
             }
-            const currentPlayer = players[currentPlayerIndex];
-            if (player != currentPlayer) {
+
+
+            const currentPlayer = lobby.players[lobby.currentPlayerIndex];
+            if (myPlayer != currentPlayer) {
 
                 return console.log("otario");
             }
          
 
-            if (player) {
-                const index = player.cards.findIndex(c => c.id === card.id);
+            if (myPlayer) {
+                const index = myPlayer.cards.findIndex(c => c.id === card.id);
 
-                if (card.cardValue === '7' && card.cardSuit === trump.cardSuit) {
-                    const hasAceOfTrump = player.cards.some(c => c.cardValue === 'A' && c.cardSuit === trump.cardSuit);
+                if (card.cardValue === '7' && card.cardSuit === lobby.trump.cardSuit) {
+                    const hasAceOfTrump = player.cards.some(c => c.cardValue === 'A' && c.cardSuit === lobby.trump.cardSuit);
                     let isLastRound = false;
-                    if (player.cards.length < 2) {
+                    if (myPlayer.cards.length < 2) {
                         isLastRound = true;
                     }
             
-                    if (hasAceOfTrump || isLastRound || newPlayingHand.length < 3) {
+                    if (hasAceOfTrump || isLastRound || lobby.newPlayingHand.length < 3) {
                        
                     } else {
                         console.log("Você só pode jogar o '7' de trunfo se tiver o ás de trunfo na mão ou for a última rodada.");
@@ -349,12 +453,12 @@ async function main() {
                     }
                 }
 
-                if (card.cardValue === 'A' && card.cardSuit === trump.cardSuit) {
-                    const hasSevenOfTrump = player.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit);
+                if (card.cardValue === 'A' && card.cardSuit === lobby.trump.cardSuit) {
+                    const hasSevenOfTrump = myPlayer.cards.some(c => c.cardValue === '7' && c.cardSuit === lobby.trump.cardSuit);
                     let isLastRound = false;
-                    const sevenOutGame = (allCardsPlayed && allCardsPlayed.cards) ? allCardsPlayed.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit) : false;                    
+                    const sevenOutGame = (lobby.allCardsPlayed && lobby.allCardsPlayed.cards) ? lobby.allCardsPlayed.cards.some(c => c.cardValue === '7' && c.cardSuit === lobby.trump.cardSuit) : false;                    
                     
-                    if (player.cards.length < 2) {
+                    if (myPlayer.cards.length < 2) {
                         isLastRound = true;
                     }
                     if (hasSevenOfTrump || isLastRound || sevenOutGame) {
@@ -368,13 +472,13 @@ async function main() {
 
 
                 if (index !== -1) {
-                    player.cards.splice(index, 1);
-                    io.emit('gameData', { hands: players, playerNames });
-                    io.emit('cardPlayed', { card, cardOwner: player.name });
-                    newPlayingHand.push(card);
-                    allCardsPlayed.push(card);
-                    playersWhoPlayedThisHand.push(socket.id);
+                    myPlayer.cards.splice(index, 1);
+                    io.to(lobby.id).emit('gameData', { hands: lobby.players, playerNames });
+                    io.to(lobby.id).emit('cardPlayed', { card, cardOwner: myPlayer.name });
 
+                    lobby.newPlayingHand.push(card);
+                    lobby.allCardsPlayed.push(card);
+                    lobby.playersWhoPlayedThisHand.push(socket.id);
                 } else {
                     console.log("Carta não encontrada na mão do jogador");
                 }
@@ -382,22 +486,23 @@ async function main() {
                 console.log("Jogador não encontrado");
             }
 
-            const nextPlayerToPlay = nextPlayer();
+            const nextPlayerToPlay = nextPlayer(lobby);
             
             if (nextPlayerToPlay) {
               console.log(`Após o jogador ${currentPlayer.name} do time ${currentPlayer.team} jogar, o próximo a jogar é ${nextPlayerToPlay.name} do time ${nextPlayerToPlay.team}`);
             } else {
               console.log(`Não foi possível encontrar o próximo jogador do outro time após ${currentPlayer.name} do time ${currentPlayer.team} jogar.`);
             }
-          
+        
+        }
 
         });
 
-        function buyCardForPlayer(currentPlayer) {
-            if (cards.length > 0 && currentPlayer.cards.length < 3) {
-                const newCard = cards.shift();
+        function buyCardForPlayer(lobby, currentPlayer) {
+            if (lobby.cards.length > 0 && currentPlayer.cards.length < 3) {
+                const newCard = lobby.cards.shift();
                 currentPlayer.cards.push(newCard);
-                io.emit('gameData', { hands: players, playerNames });
+                io.to(lobby.id).emit('gameData', { hands: lobby.players, playerNames });
             } else {
                 console.log("Não é possível comprar mais cartas.");
             }
@@ -405,27 +510,27 @@ async function main() {
         
 
         socket.on("nextHand", (playingHand) => {
-            nextHand(playingHand, trump);
-            for (let i = 0; i < 4; i++) {
+            const player = players.find(player => player.id === socket.id);
+            const lobby = lobbies.find((lobby) => lobby.id === player.lobbyId);
+            nextHand(lobby, playingHand, lobby.trump);
 
-                const currentPlayer = players[currentPlayerIndex];
-                console.log(newPlayingHand.length)
-                if (newPlayingHand.length > 0) {
+            for (let i = 0; i < 4; i++) {
+                const currentPlayer = lobby.players[lobby.currentPlayerIndex];
+                if (lobby.newPlayingHand.length > 0) {
                     return
                 }
-    
-                if (currentPlayer) {
-                        buyCardForPlayer(currentPlayer);
-                   
-                    const nextBuyerIndex = nextPlayerIndex(currentPlayerIndex, (nextPlayer) =>
+                if (currentPlayer) {    
+                        buyCardForPlayer(lobby, currentPlayer);
+                    const nextBuyerIndex = nextPlayerIndex(lobby, lobby.currentPlayerIndex, (nextPlayer) =>
                         nextPlayer.team !== currentPlayer.team &&
-                        !playersWhoPlayedThisHand.includes(nextPlayer.id)
+                        !lobby.playersWhoPlayedThisHand.includes(nextPlayer.id)
                     );
-            
+
                     if (nextBuyerIndex !== null) {
-                        currentPlayerIndex = nextBuyerIndex;
-                        console.log(`Jogador ${players[currentPlayerIndex].name} está comprando cartas.`);
-                        io.emit('nextPlayer', currentPlayerIndex);
+                        lobby.currentPlayerIndex = nextBuyerIndex;
+                        console.log(`Jogador ${lobby.players[lobby.currentPlayerIndex].name} está comprando cartas.`);
+                        io.to(lobby.id).emit('nextPlayer', lobby.currentPlayerIndex);
+
                     } else {
                         console.log("Todos os jogadores compraram cartas. Iniciar próxima fase do jogo.");
                     }
@@ -435,10 +540,9 @@ async function main() {
                 }
             }
 
+            io.to(lobby.id).emit('clearTable');
 
-            io.emit('clearTable');
-
-            if (cards.length === 0 && players.every(player => player.cards.length === 0)) {
+            if (lobby.cards.length === 0 && lobby.players.every(player => player.cards.length === 0)) {
                 gameInProgress = false;
                 console.log("Fim do jogo!");
                 console.log("Time 1", team1Points);
@@ -447,12 +551,11 @@ async function main() {
             
         })
 
-        io.emit('gameData', {hands: players, playerNames});
+        // io.emit('gameData', {hands: players, playerNames});
 
 
         socket.on('disconnect', () => {
             players = players.filter((player) => player.id !== socket.id);
-
         });
     })
 
