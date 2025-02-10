@@ -5,11 +5,8 @@ body {
   margin: 0;
   padding: 0;
   font-weight: normal;
-background: repeating-linear-gradient(
-    to right,
-    #2a0000 0px, #2a0000 50px,
-    #8B0000 50px, #8B0000 100px
-  );
+  background-image: url('cartas.jpg');
+  background-size: 700px 700px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,18 +19,6 @@ background: repeating-linear-gradient(
   align-items: center;
   padding: 2rem;
   height: 100%;
-}
-
-.logo {
-  width: 400px;
-  height: 400px;
-  margin: 0 auto;
-  display: block;
-  transition: transform 0.5s ease-in-out;
-}
-
-.logo:hover {
-  transform: scale(1.2); 
 }
 
 .center-container {

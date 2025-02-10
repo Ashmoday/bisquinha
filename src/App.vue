@@ -14,6 +14,7 @@
   const gameCards = ref([]);
   let player;
 
+
   onMounted(() => {
     socket.on('connect', () => {
     });
@@ -54,12 +55,11 @@
     playedCards.value.push({ card, cardOwner });
   });
 
-  let connectedPlayers = ref(0);  // Adição: Inicializa a variável connectedPlayers
+  let connectedPlayers = ref(0);  
 
   socket.on('players', (serverPlayers) => {
     players = serverPlayers;
     connectedPlayers.value = players.length;
-    // ... (seu código existente)
   });
 
   socket.on('gameData', ({ hands, playerNames }) => {
@@ -113,30 +113,30 @@
 </script>
 
 <template>
-  <div :class="{ 'app': true, 'white-background': !waitingForPlayers }">
-    <img v-if="waitingForPlayers" src="./logo.png" alt="Logo" class="logo" />
-    <div v-if="!waitingForPlayers" class="logo-corner">
-      <img src="./logo.png" alt="Logo" class="logo" />
-    </div>
+  <div :class="{ 'app': true, 'white-background': !waitingForPlayers }">-
+    <img v-if="waitingForPlayers && !enteredGame" src="\logo2.png" alt="Logo" class="logo" :class="{ 'logo-entered': enteredGame }" />
     <div class="center-container" v-if="waitingForPlayers">
       <div class="player-name-container">
         <input v-model="playerName" placeholder="Seu nome" />
         <button type="submit" @click="enterGame">Entrar</button>
       </div>
     </div>
+    <div class="top-container"></div>
+    <h1 class="player-greeting" v-if="enteredGame && playerName">
+      Olá, <span class="player-name">{{ playerName }}.</span>
+    </h1>
     <div class="botoes-times" v-if="enteredGame">
-    <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
-    <button type="submit" @click="selectTeam(1)">Time 1</button>
-    <button type="submit" @click="selectTeam(2)">Time 2</button>
-  </div>
+      <button type="submit" @click="nextHand(playedCards)">Next Hand</button>
+      <button type="submit" @click="selectTeam(1)">Time 1</button>
+      <button type="submit" @click="selectTeam(2)">Time 2</button>
+    </div>
     <button v-if="!waitingForPlayers" id="iniciar_partida" type="submit" @click="startGame">Iniciar Partida</button>
-
     <h2 v-if="enteredGame && !gameStarted">
-    <!-- Adição: Atualiza a mensagem com base no número de jogadores conectados -->
-    {{ connectedPlayers < 4 ? 'Aguardando a conexão dos jogadores...' : '4 jogadores conectados. Aguardando o início da partida!' }}
-  </h2>
-
+      {{ connectedPlayers < 4 ? 'Aguardando a conexão dos jogadores...' : '4 jogadores conectados. Aguardando o início da partida!' }}
+    </h2>
     <p v-if="gameStarted && currentPlayer">{{ currentPlayer.name }}</p>
+
+
 
     <div v-for="(hand, index) in playerHands" :key="hand.id">
       <p>{{ hand.name }}'s Mão do time {{ hand.team }}:</p>
@@ -176,11 +176,13 @@
         </li>
       </ul>
     </div>
+    <div class="footer" v-if="waitingForPlayers">
+      <p><strong>Criado por:</strong> Henrique Krause e Guilherme Lima</p>
+      <p>Todos os direitos reservados. ©</p>
+    </div>
     
-    
-
- 
   </div>
+
 
 
 </template>
@@ -189,14 +191,38 @@
 
 
 <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+.footer{
+    font-family: 'Poppins', sans-serif;
+    background-color: #333;
+    color: #fff;
+    height: 60px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+}
+
+.sair{
+    color: white;
+    text-decoration: none;
 }
 
 .botoes-times button{
   flex-direction: flex;
   padding: 15px;
-  background-color: #eeeeee;
+  background-color: #d6d5d5;
   color: rgb(0, 0, 0); /* Cor do texto branco */
   border: 2px solid black;
   padding: 10px 20px; /* Preenchimento interno */
@@ -209,7 +235,7 @@
   }
 
 .botoes-times button:hover{
-  background-color: #b8b8b8;
+  background-color: #a2a2a2;
   }
 
 .white-background {
@@ -218,13 +244,39 @@
   background-color: white;
 }
 
+
 .logo-corner {
   position: fixed;
-  height: 10px;
-  width: 10px;
+  height: 150px;
+  width: 150px;
   top: 10px;
   left: 10px;
 }
+
+.logo {
+  height: 350px;
+  width: 350px;
+  margin: 0 auto;
+  display: block;
+  transition: transform 0.5s ease-in-out;
+}
+
+.logo:hover {
+  transform: scale(1.2); 
+}
+
+.player-greeting {
+  margin: 0;
+  font-size: 1.5em;
+  color: black; /* Cor do "Olá" */
+  margin-bottom: 10px;
+}
+
+.player-name {
+  font-weight: bold;
+  color: green; /* Cor do nome do jogador */
+}
+
 
 .card-container {
   display: flex;
