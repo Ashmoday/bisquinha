@@ -11,16 +11,27 @@ const roomId = uuidv4();
 const games = {};
 
 function createGame(owner) {
+    if(owner == null || owner.playerData == null) return;
+    if (owner.playerData.name == '' || owner.playerData.name == null) return;
+
     games[roomId] = {
         owner: owner,
-        players: [owner.playerData]
+        players: [
+            {
+                id: owner.id,
+                name: owner.playerData.name,
+                cards: [],
+                team: 0
+            }
+        ]
     };
     owner.join(roomId);
+    owner.playerData.roomId = roomId;
     io.to(room).emit("playerConnect", owner);
     return roomId;
 }
 
-function addPlayerToGame(playerData, roomId) {
+function addPlayerToGame(player, roomId) {
     if (!games[roomId]) {
         console.error(`Sala ${roomId} não existe.`);
         return;
@@ -30,10 +41,36 @@ function addPlayerToGame(playerData, roomId) {
         games[roomId].players = [];
     }
 
-    games[roomId].players.push(playerData);
+    games[roomId].players.push(player);
+    player.join(roomId);
+    player.playerData.roomId = roomId;
+    io.to(roomId).emit("playerConnect", player);
 
 }
 
+function switchTeams(socket, team) {
+    const roomId = socket.playerData.roomId;
+    if (!games[roomId]) {
+        console.error(`Sala ${roomId} não existe.`);
+        return;
+    }
+
+    if (!games[roomId].players) {
+        return;
+    }
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) {
+        console.error(`Jogador ${socket.id} não encontrado na sala ${roomId}.`);
+        return;
+    }
+
+    player.playerData.team = team;
+    io.to(roomId).emit("playerSwitchTeam", games[roomId])
+
+}
+function updateRooms() {
+    io.emit("updateRooms", games);
+}
 
 async function main() {
 
@@ -41,21 +78,19 @@ async function main() {
 
         socket.playerData = {
             name: '',
-            id: socket.id,
-            cards: [],
-            team: 0
+            roomId: null,
         };
 
         socket.on("createRoom", () => {
-            let room = createGame(socket)
+            createGame(socket)
+            updateRooms();
         })
 
         socket.on("enterGame", (playerName, roomId) => {
             socket.playerData.name = playerName;
-            addPlayerToGame(socket.playerData, roomId)
+            addPlayerToGame(socket, roomId)
         })
-    
-    
+            
     
     })
 
