@@ -58,14 +58,15 @@ function switchTeams(socket, team) {
     if (!games[roomId].players) {
         return;
     }
+    const players = games[roomId].players;
     const player = game.players.find(p => p.id === socket.id);
     if (!player) {
         console.error(`Jogador ${socket.id} não encontrado na sala ${roomId}.`);
         return;
     }
 
-    player.playerData.team = team;
-    io.to(roomId).emit("playerSwitchTeam", games[roomId])
+    player.team = team;
+    io.to(roomId).emit("playerSwitchTeam", { players })
 
 }
 function updateRooms() {
@@ -89,6 +90,10 @@ async function main() {
         socket.on("enterGame", (playerName, roomId) => {
             socket.playerData.name = playerName;
             addPlayerToGame(socket, roomId)
+        })
+
+        socket.on("selectTeam", (team) => {
+            switchTeams(socket, team);
         })
             
     
