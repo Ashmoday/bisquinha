@@ -15,6 +15,8 @@ function createGame(owner) {
         owner: owner,
         players: [owner.playerData]
     };
+    owner.join(roomId);
+    io.to(room).emit("playerConnect", owner);
     return roomId;
 }
 
@@ -29,6 +31,7 @@ function addPlayerToGame(playerData, roomId) {
     }
 
     games[roomId].players.push(playerData);
+
 }
 
 
@@ -44,7 +47,7 @@ async function main() {
         };
 
         socket.on("createRoom", () => {
-            createGame(socket)
+            let room = createGame(socket)
         })
 
         socket.on("enterGame", (playerName, roomId) => {
