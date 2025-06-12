@@ -15,7 +15,7 @@ function createGame(owner) {
     if (owner.playerData.name == '' || owner.playerData.name == null) return;
 
     games[roomId] = {
-        owner: owner,
+        owner: owner.id,
         players: [
             {
                 id: owner.id,
@@ -40,8 +40,8 @@ function addPlayerToGame(player, roomId) {
     if (!games[roomId].players) {
         games[roomId].players = [];
     }
-
-    games[roomId].players.push(player);
+    let isInRoom = games[roomId].players.some(p => p.id === socket.id)
+    if (isInRoom) return;
     player.join(roomId);
     player.playerData.roomId = roomId;
     io.to(roomId).emit("playerConnect", player);
@@ -59,7 +59,7 @@ function switchTeams(socket, team) {
         return;
     }
     const players = games[roomId].players;
-    const player = game.players.find(p => p.id === socket.id);
+    const player = games.players.find(p => p.id === socket.id);
     if (!player) {
         console.error(`Jogador ${socket.id} não encontrado na sala ${roomId}.`);
         return;
@@ -72,6 +72,15 @@ function switchTeams(socket, team) {
 function updateRooms() {
     io.emit("updateRooms", games);
 }
+
+function checkTeam(players) {
+    if (players.some(player => player.team == 0)) return;
+    let isTeam1Full = players.filter(player => player.team == 1).length > 2;
+    let isTeam2Full = players.filter(player => player.team == 2).length > 2;
+
+    if (isTeam1Full || isTeam2Full) return;
+}
+
 
 async function main() {
 
@@ -96,7 +105,16 @@ async function main() {
             switchTeams(socket, team);
         })
             
-    
+        socket.on("start", (roomId) => {
+            let playerRoom = socket.playerData.roomId;
+            if (playerRoom != roomId) return;
+            let gameRoom = games[roomId];
+            if (gameRoom.owner != socket.id) return;
+            
+            if (gameRoom.players.length < 4) return;
+            checkTeam(gameRoom.players);
+            
+        })
     })
 
 
