@@ -104,7 +104,10 @@ function createGameCards(roomId) {
     io.to(roomId).emit("gameStart", game);
 }
 
-function nextPlayer(game) {
+function nextPlayer(game) { 
+    const players = game.players;
+    const currentPlayerIndex = game.currentPlayerIndex;
+    const playersWhoPlayedThisHand = game.playersWhoPlayedThisHand
     
     for (let i = 1; i <= players.length; i++) {
       const nextIndex = (currentPlayerIndex + i) % players.length;
@@ -207,7 +210,7 @@ async function main() {
                     return;
                 }
 
-                const nextPlayerToPlay
+                nextPlayer(game);
             }
         })
     })
