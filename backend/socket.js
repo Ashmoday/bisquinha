@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 import { v4 as uuidv4 } from 'uuid';
+const Deck = require("./cards.js");
 
 const io = new Server(httpServer, {
     cors: {
@@ -23,7 +24,9 @@ function createGame(owner) {
                 cards: [],
                 team: 0
             }
-        ]
+        ],
+        deck: [],        
+        trumpCard: {},
     };
     owner.join(roomId);
     owner.playerData.roomId = roomId;
@@ -81,6 +84,21 @@ function checkTeam(players) {
     if (isTeam1Full || isTeam2Full) return;
 }
 
+function createGameCards(roomId) {
+    const game = games[roomId];
+    const cards = Deck.createCards();
+    Deck.shuffle(cards);
+    const trump = Deck.selectTrump(cards);
+    const hands = Deck.distributeCards(cards, game.players.length, 3);
+    const players = game.players;
+    players.forEach((player, index) => {
+        player.cards = hands[index];        
+    })
+    game.trumpCard = trump;
+
+    io.to(roomId).emit("gameStart", game);
+}
+
 
 async function main() {
 
@@ -112,8 +130,9 @@ async function main() {
             if (gameRoom.owner != socket.id) return;
             
             if (gameRoom.players.length < 4) return;
-            checkTeam(gameRoom.players);
             
+            checkTeam(gameRoom.players);
+            createGameCards(roomId);
         })
     })
 
