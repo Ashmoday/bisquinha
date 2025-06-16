@@ -107,6 +107,51 @@ function createGameCards(roomId) {
     io.to(roomId).emit("gameStart", game);
 }
 
+function compareCards(cards, trump) {
+    if (cards.length !== 4) {
+        console.error("Deve haver exatamente 4 cartas na mesa.");
+        return;
+    }
+
+    const trumpsInHand = cards.filter(card => card.cardSuit === trump.cardSuit);
+
+    if (trumpsInHand.length > 0) {
+        trumpsInHand.sort((card1, card2) => {
+            const valueIndex1 = cardValues.indexOf(card1.cardValue);
+            const valueIndex2 = cardValues.indexOf(card2.cardValue);
+            return valueIndex2 - valueIndex1; 
+        });
+
+        cards[cards.indexOf(trumpsInHand[0])] = cards[0];
+        cards[0] = trumpsInHand[0];
+
+        return cards[0];
+    }
+
+    const firstSuit = cards[0].cardSuit;
+
+    const suitsInHand = cards.filter(card => card.cardSuit === firstSuit);
+
+    if (suitsInHand.length > 0) {
+        suitsInHand.sort((card1, card2) => {
+            const valueIndex1 = cardValues.indexOf(card1.cardValue);
+            const valueIndex2 = cardValues.indexOf(card2.cardValue);
+            return valueIndex2 - valueIndex1; 
+        });
+
+        cards[cards.indexOf(suitsInHand[0])] = cards[0];
+        cards[0] = suitsInHand[0];
+
+        console.log(cards)
+
+        return cards[0];
+    }
+
+    return cards[0];
+}
+
+
+
 function nextPlayer(game) { 
     const players = game.players;
     const currentPlayerIndex = game.currentPlayerIndex;
@@ -132,7 +177,7 @@ function nextPlayer(game) {
     if (cards.length > 0 && currentPlayer.cards.length < 3) {
         const newCard = cards.shift();
         currentPlayer.cards.push(newCard);
-        io.emit('gameData', game);
+        io.to(game.id).emit('gameData', game);
     } else {
         console.log("Não é possível comprar mais cartas.");
         return;
@@ -197,7 +242,9 @@ function nextPlayer(game) {
   }
 
 function nextHand(game) {
-    let playingHand = game.playingHand
+    let playingHand = game.playingHand;
+    let players = game.players;
+    let trump = game.trump;
     if (!playingHand) return;
     if (playingHand.length < 1) return;
     const bigCard = compareCards(playingHand.map(entry => entry.card), trump);
@@ -229,6 +276,7 @@ function nextHand(game) {
     playersWhoPlayedThisHand = [];
     playingHand = [];
     newPlayingHand = []
+    buyCardForPlayer(game);
 }
 
 module.exports = {
