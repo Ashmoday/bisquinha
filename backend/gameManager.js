@@ -16,6 +16,7 @@ function createGame(owner) {
     if (owner.playerData.name == '' || owner.playerData.name == null) return;
 
     games[roomId] = {
+        id: roomId,
         owner: owner.id,
         players: [
             {
@@ -31,6 +32,8 @@ function createGame(owner) {
         currentPlayerIndex: 0,
         newPlayingHand: [],
         allCardsPlayed: [],
+        currentPlayer: [],
+        
 
     };
     owner.join(roomId);
@@ -115,6 +118,7 @@ function nextPlayer(game) {
   
       if (nextPlayer.team !== players[currentPlayerIndex].team && !playersWhoPlayedThisHand.includes(nextPlayer.id)) {
         currentPlayerIndex = nextIndex;
+        io.to(game.id).emit("nextPlayer", game);
         return nextPlayer;
       }
     }
@@ -122,8 +126,112 @@ function nextPlayer(game) {
     return null;    
   }
 
+  function buyCardForPlayer(game) {
+    let cards = game.cards;
+    let currentPlayer = game.currentPlayer;
+    if (cards.length > 0 && currentPlayer.cards.length < 3) {
+        const newCard = cards.shift();
+        currentPlayer.cards.push(newCard);
+        io.emit('gameData', game);
+    } else {
+        console.log("Não é possível comprar mais cartas.");
+        return;
+    }
+  }
 
-  module.exports = {
+  
+  function playCard(socket, roomId, card) {
+    const game = games[roomId];
+    const player = game.players.find(player => player.id === socket.id);
+    if (game.playersWhoPlayedThisHand.includes(player.id)) return;
+    const currentPlayer = game.players[game.currentPlayerIndex];
+    if (player != currentPlayer) return;
+    const newPlayingHand = game.newPlayingHand;
+
+    const index = player.cards.findIndex(c => c.id === card.id);
+    const allCardsPlayed = game.allCardsPlayed;
+
+    if (card.cardValue === '7' && card.cardSuit === trump.cardSuit) {
+        const hasAceOfTrump = player.cards.some(c => c.cardValue === 'A' && c.cardSuit === trump.cardSuit);
+        let isLastRound = false;
+        if (player.cards.length < 2) {
+            isLastRound = true;
+        }
+
+        if (!hasAceOfTrump && !isLastRound && newPlayingHand.length < 3 ) {
+            console.log("Você só pode jogar o '7' de trunfo se tiver o ás de trunfo na mão ou for a última rodada.");
+            return;
+        }   
+    }
+
+    if (card.cardValue === 'A' && card.cardSuit === trump.cardSuit) {
+        const hasSevenOfTrump = player.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit);
+        let isLastRound = false;
+        const sevenOutGame = (allCardsPlayed && allCardsPlayed.cards) ? allCardsPlayed.cards.some(c => c.cardValue === '7' && c.cardSuit === trump.cardSuit) : false;                    
+        
+        if (player.cards.length < 2) {
+            isLastRound = true;
+        }
+        if (!hasSevenOfTrump && !isLastRound && !sevenOutGame) {
+            console.log("Você só pode jogar Ás de trunfo se tiver o 7 na mão, for na última rodada OU o 7 já ter sido jogado!");
+            return;
+        }
+
+        if (index !== -1)
+        {
+            player.cards.splice(index, 1);
+            game.newPlayingHand.push({
+                card,
+                cardOwner: player
+            });
+            allCardsPlayed.cards.push(card)
+            game.playersWhoPlayedThisHand.push(socket.id)
+            io.to(roomId).emit("gameData", game)
+        } else {
+            console.log("Carta não encontrada na mão do jogador");
+            return;
+        }
+
+        nextPlayer(game);
+    }
+  }
+
+function nextHand(game) {
+    let playingHand = game.playingHand
+    if (!playingHand) return;
+    if (playingHand.length < 1) return;
+    const bigCard = compareCards(playingHand.map(entry => entry.card), trump);
+    const bigCardOwner = playingHand.find(entry => entry.card === bigCard).cardOwner;
+
+
+    const bigCardOwnerIndex = players.findIndex(player => player.name === bigCardOwner);
+    if (bigCardOwnerIndex !== -1) {
+        console.log('O índice do jogador correspondente é:', bigCardOwnerIndex);
+        currentPlayerIndex = bigCardOwnerIndex
+    } else {
+        console.log('Jogador não encontrado no array.');
+    }
+
+    console.log('A maior carta na mão jogada é:', bigCard);
+    let winnerTeam = players[bigCardOwnerIndex].team
+
+    if (winnerTeam == 1) {
+        cardsTeam1.push(...playingHand.map(item => item.card));
+        console.log(cardsTeam1);
+        countPoints(cardsTeam1, winnerTeam);
+
+    }
+    if (winnerTeam == 2) {
+        cardsTeam2.push(...playingHand.map(item => item.card));
+        countPoints(cardsTeam2, winnerTeam);
+    }   
+
+    playersWhoPlayedThisHand = [];
+    playingHand = [];
+    newPlayingHand = []
+}
+
+module.exports = {
     games,
     init,
     createGame,
@@ -132,5 +240,8 @@ function nextPlayer(game) {
     updateRooms,
     checkTeam,
     createGameCards,
-    nextPlayer
+    nextPlayer,
+    buyCardForPlayer,
+    playCard,
+    nextHand,
 };
