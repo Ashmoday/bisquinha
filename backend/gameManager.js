@@ -171,7 +171,21 @@ function nextPlayer(game) {
     return null;    
   }
 
-  function buyCardForPlayer(game) {
+  function nextPlayerIndex(startingIndex, condition) {
+    for (let i = 1; i <= players.length; i++) {
+        const nextIndex = (startingIndex + i) % players.length;
+        const nextPlayer = players[nextIndex];
+
+        if (condition(nextPlayer)) {
+            return nextIndex;
+        }
+    }
+
+    return null;
+} 
+
+  function buyCardForPlayer(gameId) {
+    let game = games[gameId]
     let cards = game.cards;
     let currentPlayer = game.currentPlayer;
     if (cards.length > 0 && currentPlayer.cards.length < 3) {
@@ -241,7 +255,8 @@ function nextPlayer(game) {
     }
   }
 
-function nextHand(game) {
+function nextHand(gameId) {
+    let game = games[gameId];
     let playingHand = game.playingHand;
     let players = game.players;
     let trump = game.trump;
@@ -273,10 +288,48 @@ function nextHand(game) {
         countPoints(cardsTeam2, winnerTeam);
     }   
 
-    playersWhoPlayedThisHand = [];
-    playingHand = [];
-    newPlayingHand = []
-    buyCardForPlayer(game);
+    game.playersWhoPlayedThisHand = [];
+    game.playingHand = [];
+    game.newPlayingHand = []
+}
+
+function handleCardBuying(roomId)
+{
+    let game = games[roomId];
+    const players = game.players;
+    
+    if (game.newPlayingHand.length > 0) return;
+    const currentPlayer = players[game.currentPlayerIndex];
+
+    const bought = buyCardForPlayer(game.id);
+
+    const nextIndex = nextPlayerIndex(game.currentPlayerIndex, (nextPlayer) => 
+        nextPlayer.team !== currentPlayer.team &&
+        !game.playersWhoPlayedThisHand.includes(nextPlayer.id)
+    );
+    if (nextIndex !== null) {
+        game.currentPlayerIndex = nextIndex;
+        console.log(`Jogador ${players[nextIndex].name} vai comprar agora.`);
+        io.to(roomId).emit('nextPlayer', nextIndex);
+    }
+    io.emit('clearTable');
+    endGame(roomId);
+}
+
+function endGame(gameId)
+{
+    let game = games[gameId];
+    let cards = game.cards;
+    let players = game.players;
+    let gameInProgress = game.gameInProgress;
+    let team1Points = game.team1Points;
+    let team2Points = game.team2Points;
+    if (cards.length === 0 && players.every(player => player.cards.length === 0)) {
+        gameInProgress = false;
+        console.log("Fim do jogo!");
+        console.log("Time 1", team1Points);
+        console.log('time2', team2Points);
+    }
 }
 
 module.exports = {
