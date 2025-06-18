@@ -337,19 +337,28 @@ function deleteGame(gameId)
     let game = games[gameId];
     let players = game.players
     
+    for(i = players.length - 1; i >= 0; i--)
+    {
+        let player = players[i];
+        kickPlayer(gameId, player.id);
+    }
+    delete games[gameId];
+    io.emit("deleteGame", games);
 }
 
-function disconnect(roomId, playerId)
+function kickPlayer(roomId, playerId)
 {
     let game = games[roomId];
-    const player = game.players.find(player => player.id === socket.id);
+    const player = game.players.find(player => player.id === playerId);
     game.players.filter((player) => player.id !== playerId);
     player.playerData.roomId = null;
     endGame(roomId);
     if (game.owner = playerId)
     {
-        
+        deleteGame(roomId);
     }
+    io.to(roomId).emit("removePlayer", game.players);
+
 }
 
 module.exports = {
