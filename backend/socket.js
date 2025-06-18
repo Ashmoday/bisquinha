@@ -11,7 +11,8 @@ const {
     nextPlayer,
     buyCardForPlayer,
     playCard,
-    nextHand
+    nextHand,
+    handleCardBuying
 } = require('./gameManager');
 
 
@@ -67,6 +68,10 @@ async function main() {
             let gameRoom = games[roomId];
             if (!gameRoom) return;
             nextHand(roomId)
+            handleCardBuying(roomId)
+        })
+
+        socket.on("disconnect", () => {
             
         })
 

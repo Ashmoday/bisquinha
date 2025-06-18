@@ -332,6 +332,26 @@ function endGame(gameId)
     }
 }
 
+function deleteGame(gameId)
+{
+    let game = games[gameId];
+    let players = game.players
+    
+}
+
+function disconnect(roomId, playerId)
+{
+    let game = games[roomId];
+    const player = game.players.find(player => player.id === socket.id);
+    game.players.filter((player) => player.id !== playerId);
+    player.playerData.roomId = null;
+    endGame(roomId);
+    if (game.owner = playerId)
+    {
+        
+    }
+}
+
 module.exports = {
     games,
     init,
@@ -345,4 +365,5 @@ module.exports = {
     buyCardForPlayer,
     playCard,
     nextHand,
+    handleCardBuying
 };
