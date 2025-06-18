@@ -353,7 +353,7 @@ function kickPlayer(roomId, playerId)
     game.players.filter((player) => player.id !== playerId);
     player.playerData.roomId = null;
     endGame(roomId);
-    if (game.owner = playerId)
+    if (game.owner == playerId)
     {
         deleteGame(roomId);
     }
