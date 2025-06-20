@@ -12,7 +12,8 @@ const {
     buyCardForPlayer,
     playCard,
     nextHand,
-    handleCardBuying
+    handleCardBuying,
+    kickPlayer,
 } = require('./gameManager');
 
 

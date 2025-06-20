@@ -374,5 +374,6 @@ module.exports = {
     buyCardForPlayer,
     playCard,
     nextHand,
-    handleCardBuying
+    handleCardBuying,
+    kickPlayer,
 };
