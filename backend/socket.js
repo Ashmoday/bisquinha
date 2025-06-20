@@ -72,7 +72,8 @@ async function main() {
         })
 
         socket.on("disconnect", () => {
-            
+            const roomId = socket.playerData.roomId;
+            kickPlayer(roomId, socket.id);
         })
 
 
